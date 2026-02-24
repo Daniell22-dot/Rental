@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RMS | Admin & Owner</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body oncontextmenu="return false;">
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo">RMS Admin</div>
+            <nav>
+                <a href="#" class="active" onclick="showAdminView('overview')"><i class="fas fa-chart-bar"></i>
+                    Overview</a>
+                <a href="#" onclick="showAdminView('users')"><i class="fas fa-users"></i> Tenants</a>
+                <a href="#" onclick="showAdminView('finance')"><i class="fas fa-money-check-alt"></i> Finance/KRA</a>
+                <a href="/"><i class="fas fa-sign-out-alt"></i> Exit App</a>
+            </nav>
+            <div class="role-selector" style="padding: 1rem; border-top: 1px solid var(--border);">
+                <select onchange="switchRole(this.value)" style="width:100%; padding:0.5rem; border-radius:0.5rem;">
+                    <option value="owner">Owner View</option>
+                    <option value="manager">Caretaker View</option>
+                </select>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-nav">
+                <h1 id="view-title">Owner Dashboard</h1>
+                <div class="theme-toggle" onclick="toggleTheme()">
+                    <i class="fas fa-moon"></i>
+                </div>
+            </header>
+
+            <div class="content-body">
+                <div id="ai-insights" class="stat-card"
+                    style="background: linear-gradient(135deg, #1a237e 0%, #283593 100%); color: white; margin-bottom: 1.5rem; display: none;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                        <i class="fas fa-robot"></i>
+                        <h3 style="margin: 0; font-size: 1.1rem;">DeepSeek Smart Insights</h3>
+                    </div>
+                    <p id="ai-narrative" style="margin: 0; line-height: 1.5; font-size: 0.95rem;">Analyzing
+                        performance...</p>
+                </div>
+
+                <section id="overview" class="content-view active">
+                    <div class="stats-grid"
+                        style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1rem;">
+                        <div class="stat-card">
+                            <span class="label">Net Profit</span>
+                            <h3 id="net-profit">Ksh --</h3>
+                        </div>
+                        <div class="stat-card">
+                            <span class="label">KRA / Tax</span>
+                            <h3 id="kra-tax">Ksh --</h3>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="users" class="content-view">
+                    <h2>Tenant Management</h2>
+                    <div class="stat-card" style="margin-top:1rem; overflow-x:auto;">
+                        <table style="width:100%; text-align:left; border-collapse:collapse;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid var(--border);">
+                                    <th style="padding:1rem;">Name</th>
+                                    <th style="padding:1rem;">Unit</th>
+                                    <th style="padding:1rem;">Phone</th>
+                                    <th style="padding:1rem;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tenant-list-body">
+                                <tr>
+                                    <td colspan="4" style="padding:2rem; text-align:center;">Loading tenants...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section id="finance" class="content-view">
+                    <h2>Financial Management</h2>
+                    <div class="manual-entry stat-card" style="margin-top:1rem;">
+                        <p>Manually verify Mpesa Code:</p>
+                        <input type="text" id="admin-mpesa" placeholder="Enter code">
+                        <button>Verify Now</button>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+    <script src="app.js"></script>
+    <script src="admin.js"></script>
+</body>
+
+</html>

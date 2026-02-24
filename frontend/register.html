@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RMS | Join Us</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body oncontextmenu="return false;">
+    <div class="auth-page">
+        <div class="auth-container" style="max-width: 500px;">
+            <h2>Create Account</h2>
+            <form id="register-form" onsubmit="handleRegistration(event)">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <input type="text" id="reg-first" placeholder="First Name" required>
+                    <input type="text" id="reg-last" placeholder="Last Name" required>
+                </div>
+                <input type="email" id="reg-email" placeholder="Email Address" required>
+                <input type="text" id="reg-phone" placeholder="Phone Number" required>
+                <input type="password" id="reg-pass" placeholder="Password" required>
+
+                <div class="captcha-container">
+                    <span class="captcha-question" id="reg-captcha-q">Loading captcha...</span>
+                    <input type="text" id="reg-captcha-ans" class="captcha-input" placeholder="?" required>
+                </div>
+
+                <div style="margin: 0.5rem 0; text-align: left; display: flex; align-items: flex-start; gap: 0.5rem;">
+                    <input type="checkbox" id="reg-tos" required style="margin-top: 0.3rem;">
+                    <label for="reg-tos" style="font-size: 0.9rem; color: var(--text-muted);">
+                        I agree to the <a href="policies.html" target="_blank">Terms of Service</a> and have read the <a
+                            href="policies.html" target="_blank">Privacy Policy</a>.
+                    </label>
+                </div>
+
+                <button type="submit">Create Account</button>
+            </form>
+            <p style="margin-top: 1.5rem;">Already have an account? <a href="index.html">Sign In</a></p>
+        </div>
+    </div>
+    <script src="app.js"></script>
+    <script>
+        // Initialize registration specific UI
+        window.addEventListener('load', () => {
+            if (typeof generateRegCaptcha === 'function') generateRegCaptcha();
+        });
+    </script>
+</body>
+
+</html>

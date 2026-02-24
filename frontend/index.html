@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RMS | Tenant Portal</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/your-code.js" crossorigin="anonymous"></script>
+</head>
+
+<body oncontextmenu="return false;">
+    <div id="auth-check" style="display: none;">
+        <div class="app-container">
+            <aside class="sidebar">
+                <div class="logo">RMS Tenant</div>
+                <nav>
+                    <a href="#" class="active" onclick="showView('home')"><i class="fas fa-home"></i> My Room</a>
+                    <a href="#" onclick="showView('payments')"><i class="fas fa-wallet"></i> Payments</a>
+                    <a href="#" onclick="showView('notifications')"><i class="fas fa-bell"></i> Notifications</a>
+                    <a href="#" onclick="showView('feedback')"><i class="fas fa-comment-alt"></i> Complaints</a>
+                    <a href="#" onclick="showView('settings')"><i class="fas fa-cog"></i> Settings</a>
+                </nav>
+                <div class="logout-btn">
+                    <button onclick="logout()" class="btn-text"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                </div>
+            </aside>
+
+            <main class="main-content">
+                <header class="top-nav">
+                    <div id="user-display">Account: Loading...</div>
+                    <div class="theme-toggle" onclick="toggleTheme()">
+                        <i class="fas fa-moon"></i>
+                    </div>
+                </header>
+
+                <div class="content-body">
+                    <section id="home" class="content-view active">
+                        <h2>Welcome back!</h2>
+                        <div class="stats-grid"
+                            style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-top: 1rem;">
+                            <div id="room-details" class="stat-card">
+                                <!-- Room info will go here -->
+                                Loading your room details...
+                            </div>
+                            <div class="stat-card">
+                                <span class="label">Total Arrears (KES)</span>
+                                <h3 id="tenant-arrears" style="color: var(--danger);">Ksh --</h3>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="payments" class="content-view">
+                        <h2>Payments</h2>
+                        <div class="payment-actions" style="margin-top:1.5rem;">
+                            <button class="btn-primary" onclick="payViaApp()">Pay via App (QR)</button>
+                            <div class="manual-mpesa" style="margin-top:1rem;">
+                                <p>Paid outside? Enter MPESA Code:</p>
+                                <input type="text" id="mpesa-code" placeholder="QK82L9..." maxlength="10">
+                                <button onclick="submitMpesaCode()">Verify & Refresh</button>
+                            </div>
+                        </div>
+                        <div id="payment-history" style="margin-top:2rem;">
+                            <h3>History</h3>
+                            <div id="history-list">Loading history...</div>
+                        </div>
+                    </section>
+
+                    <section id="notifications" class="content-view">
+                        <h2>Notifications</h2>
+                        <div id="notification-list" style="margin-top:1rem;"></div>
+                    </section>
+
+                    <section id="feedback" class="content-view">
+                        <h2>Submit Feedback / Complaint</h2>
+                        <form id="feedback-form" onsubmit="submitFeedback(event)" style="margin-top:1rem;">
+                            <input type="text" id="fb-subject" placeholder="Subject" required>
+                            <textarea id="fb-message" placeholder="Describe your issue..." required></textarea>
+                            <button type="submit">Submit</button>
+                        </form>
+                    </section>
+
+                    <section id="settings" class="content-view">
+                        <h2>Settings</h2>
+                        <div class="setting-item">
+                            <label>Profile Picture</label>
+                            <input type="file" onchange="uploadProfile(this)">
+                        </div>
+                        <div class="setting-item" style="margin-top:1rem;">
+                            <button onclick="toggleTheme()">Toggle Dark/Light Mode</button>
+                        </div>
+                    </section>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <div id="login-screen" class="auth-page">
+        <div class="auth-container">
+            <h2>Sign In</h2>
+            <form onsubmit="handleLogin(event)">
+                <input type="email" id="login-email" placeholder="Email Address" required>
+                <input type="password" id="login-pass" placeholder="Password" required>
+
+                <div class="captcha-container">
+                    <span class="captcha-question" id="captcha-q">Loading...</span>
+                    <input type="text" id="captcha-ans" class="captcha-input" placeholder="?" required>
+                </div>
+
+                <button type="submit">Login</button>
+            </form>
+
+            <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                <p>New here? <a href="register.html">Create Tenant Account</a></p>
+                <a href="#" onclick="forgotPassword()" style="font-size: 0.9rem;">Forgot password?</a>
+                <hr style="border: none; border-top: 1px solid var(--border); margin: 0.5rem 0;">
+                <a href="policies.html" style="font-size: 0.85rem; color: var(--text-muted);">Privacy Policy & Terms</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
