@@ -200,24 +200,51 @@ async function submitMpesaCode() {
 
 async function handleRegistration(event) {
     event.preventDefault();
-    const first = document.getElementById('reg-first').value;
-    const last = document.getElementById('reg-last').value;
-    const email = document.getElementById('reg-email').value;
-    const phone = document.getElementById('reg-phone').value;
+    const first = document.getElementById('reg-first').value.trim();
+    const last = document.getElementById('reg-last').value.trim();
+    const email = document.getElementById('reg-email').value.trim();
+    const phone = document.getElementById('reg-phone').value.trim();
     const pass = document.getElementById('reg-pass').value;
     const tos = document.getElementById('reg-tos').checked;
     const userCaptcha = document.getElementById('reg-captcha-ans').value;
 
+    // Validate CAPTCHA
     if (parseInt(userCaptcha) !== regCaptchaAnswer) {
         alert('Incorrect human verification code. Please try again.');
         generateRegCaptcha();
         return;
     }
 
+    // Validate required fields
+    if (!first || !last || !email || !phone || !pass) {
+        alert('Please fill in all fields.');
+        return;
+    }
+
+    // Validate TOS acceptance
     if (!tos) {
         alert('You must agree to the Terms of Service.');
         return;
     }
+
+    // Client-side password validation (mirrors backend requirements)
+    const passwordErrors = validatePassword(pass);
+    if (passwordErrors.length > 0) {
+        alert('Password requirements not met:\n• ' + passwordErrors.join('\n• '));
+        return;
+    }
+
+    // Validate phone format (basic client-side check)
+    if (!validatePhoneNumber(phone)) {
+        alert('Invalid phone number. Please use Kenya format (e.g., 0712345678 or +254712345678)');
+        return;
+    }
+
+    // Show loading state
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const origText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creating account...';
 
     try {
         const response = await fetch('/api/v1/auth/register', {
@@ -240,11 +267,57 @@ async function handleRegistration(event) {
             window.location.href = 'index.html';
         } else {
             const error = await response.json();
-            alert(`Registration failed: ${error.detail || 'Please check your details.'}`);
+            // Parse and display backend errors clearly
+            let errorMsg = error.detail || 'Unknown error';
+            if (typeof errorMsg === 'string' && errorMsg.includes('|')) {
+                // Multiple errors separated by |
+                const errors = errorMsg.split('|').map(e => e.trim());
+                errorMsg = errors.join('\n• ');
+            }
+            alert(`Registration failed:\n• ${errorMsg}`);
         }
     } catch (err) {
         console.error('Registration error:', err);
+        alert('Network error. Please check your connection and try again.');
+    } finally {
+        // Restore button state
+        submitBtn.disabled = false;
+        submitBtn.textContent = origText;
     }
+}
+
+// Password validation utility (mirrors backend)
+function validatePassword(password) {
+    const errors = [];
+    
+    if (password.length < 8) {
+        errors.push('At least 8 characters');
+    }
+    if (password.length > 72) {
+        errors.push('Cannot exceed 72 characters');
+    }
+    if (!/[A-Z]/.test(password)) {
+        errors.push('At least one uppercase letter (A-Z)');
+    }
+    if (!/[a-z]/.test(password)) {
+        errors.push('At least one lowercase letter (a-z)');
+    }
+    if (!/[0-9]/.test(password)) {
+        errors.push('At least one number (0-9)');
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{};:'",.<>?/\\|`~]/.test(password)) {
+        errors.push('At least one special character (!@#$%^&*)');
+    }
+    
+    return errors;
+}
+
+// Phone validation utility for Kenya numbers
+function validatePhoneNumber(phone) {
+    // Pattern: (0 or +254 or 254) followed by 9-10 digits starting with 1-9
+    const pattern = /^(\+254|0|254)?([1-9]\d{7,8})$/;
+    const cleaned = phone.replace(/[\s\-]/g, '');
+    return pattern.test(cleaned);
 }
 
 // Global Initialization

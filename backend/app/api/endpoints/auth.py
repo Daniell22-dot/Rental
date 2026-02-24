@@ -86,23 +86,43 @@ def is_kenyan_ip(ip: str):
 
 @router.post("/register", response_model=Token)
 async def register(response: Response, user_in: UserCreate, db: AsyncSession = Depends(get_db)):
+    from app.core.validators import PasswordValidator, EmailValidator, PhoneValidator
+    
     if not is_kenyan_ip("dynamic"): # IP would come from request headers
          raise HTTPException(status_code=403, detail="Registration is only allowed from Kenya.")
 
     if (not check_rate_limit(user_in.email, register_attempts[user_in.email], 50)):
         raise HTTPException(status_code=429, detail="Too many registration attempts. Please try again later.")
 
+    # Validate email format
+    if not EmailValidator.validate(user_in.email):
+        raise HTTPException(status_code=400, detail="Invalid email format")
+
     if not user_in.terms_accepted:
         raise HTTPException(status_code=400, detail="You must accept the terms of service")
     
+    # Validate password strength and length
+    password_validation = PasswordValidator.validate(user_in.password)
+    if not password_validation["valid"]:
+        error_msg = " | ".join(password_validation["errors"])
+        raise HTTPException(status_code=422, detail=f"Password requirements not met: {error_msg}")
+    
+    # Validate phone number (Kenya)
+    if not PhoneValidator.validate(user_in.phone):
+        raise HTTPException(status_code=400, detail="Invalid phone number. Use Kenya format (e.g., 0712345678 or +254712345678)")
+    
+    # Check if user already exists
     result = await db.execute(select(User).filter(User.email == user_in.email))
     user = result.scalars().first()
     if user:
-        raise HTTPException(status_code=400, detail="A user with this email already exists.")
+        raise HTTPException(status_code=409, detail="A user with this email already exists.")
+    
+    # Normalize phone number
+    normalized_phone = PhoneValidator.normalize(user_in.phone)
     
     new_user = User(
         email=user_in.email,
-        phone=user_in.phone,
+        phone=normalized_phone,
         hashed_password=get_password_hash(user_in.password),
         first_name=user_in.first_name,
         last_name=user_in.last_name,
@@ -124,6 +144,7 @@ async def register(response: Response, user_in: UserCreate, db: AsyncSession = D
         samesite="lax", secure=False # Set secure=True in production
     )
     
+    logger.info(f"New user registered: {new_user.email}")
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/login", response_model=Token)
