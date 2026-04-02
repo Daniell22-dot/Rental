@@ -6,7 +6,7 @@ from app.core.database import get_db
 from app.models.property import Property
 from pydantic import BaseModel
 
-router = APIRouter()
+router = APIRouter() # This router will handle all property-related endpoints, such as listing properties, adding new properties, updating property details, and deleting properties. By organizing these endpoints under a dedicated router, we can keep our codebase clean and maintainable, making it easier to manage property-related functionality in our application. The endpoints defined in this router will allow users to interact with the properties in the system, providing essential features for managing rental properties effectively.
 
 class PropertySchema(BaseModel):
     id: int

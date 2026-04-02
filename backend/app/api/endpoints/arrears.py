@@ -1,110 +1,62 @@
 # backend/app/api/endpoints/arrears.py
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import func, select
+from sqlalchemy import select, func
 from app.core.database import get_db
-from app.models.tenant import Tenant
-from app.models.payment import Payment
-from app.models.lease import Lease
 from app.models.users import User
+from app.models.payment import Payment
+from app.models.tenant import Tenant
 from app.api.endpoints.auth import get_current_user
-from app.core.exceptions import NotFoundException
 from pydantic import BaseModel
-from typing import Optional
+from datetime import datetime
 
 router = APIRouter()
 
 class ArrearsResponse(BaseModel):
     arrears: float
-    monthly_rent: Optional[float] = None
+    last_payment_date: datetime = None
     currency: str = "KES"
-    status: str  # "clear", "overdue"
-    months_overdue: int = 0
-    payment_history_count: int = 0
 
-@router.get("/my", response_model=ArrearsResponse, status_code=status.HTTP_200_OK)
+@router.get("/my", response_model=ArrearsResponse)
 async def get_my_arrears(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Get current user's rent arrears"""
-    # Find tenant record for current user
+    """Get current user's arrears"""
+    
+    # Get tenant record for this user
     result = await db.execute(
-        select(Tenant).filter(Tenant.user_id == current_user.id)
+        select(Tenant).where(Tenant.user_id == current_user.id)
     )
     tenant = result.scalars().first()
     
     if not tenant:
-        raise NotFoundException(detail="No tenant record found for this user")
-
-    # Find active lease
-    result = await db.execute(
-        select(Lease).filter(
-            Lease.tenant_id == tenant.id,
-            Lease.status == 'active'
-        )
-    )
-    active_lease = result.scalars().first()
+        return ArrearsResponse(arrears=0.0)
     
-    if not active_lease:
-        return ArrearsResponse(
-            arrears=0,
-            monthly_rent=None,
-            status="clear",
-            currency="KES"
-        )
-
-    # Calculate overdue amount
+    # Calculate total paid
     result = await db.execute(
-        select(func.sum(Payment.amount)).filter(
+        select(func.sum(Payment.amount)).where(
             Payment.tenant_id == tenant.id,
-            Payment.status.in_(['overdue', 'failed'])
+            Payment.status == 'completed'
         )
     )
-    overdue_amount = result.scalar() or 0.0
+    total_paid = result.scalar() or 0.0
     
-    # Count total payments
+    # Calculate expected rent (simplified - should consider lease dates)
+    expected_rent = tenant.monthly_rent * 1  # Current month
+    
+    arrears = max(0, expected_rent - total_paid)
+    
+    # Get last payment date
     result = await db.execute(
-        select(func.count(Payment.id)).filter(
-            Payment.tenant_id == tenant.id
-        )
+        select(Payment.payment_date).where(
+            Payment.tenant_id == tenant.id,
+            Payment.status == 'completed'
+        ).order_by(Payment.payment_date.desc()).limit(1)
     )
-    payment_count = result.scalar() or 0
-
-    # Estimate months overdue (rough calculation)
-    months_overdue = int(overdue_amount / active_lease.monthly_rent) if active_lease.monthly_rent > 0 else 0
-
+    last_payment = result.scalar()
+    
     return ArrearsResponse(
-        arrears=overdue_amount,
-        monthly_rent=active_lease.monthly_rent,
-        status="overdue" if overdue_amount > 0 else "clear",
-        currency="KES",
-        months_overdue=months_overdue,
-        payment_history_count=payment_count
+        arrears=arrears,
+        last_payment_date=last_payment
     )
-
-@router.get("/summary", response_model=dict)
-async def get_arrears_summary(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """Get summary of total system arrears (admin only)"""
-    # Calculate total overdue across all tenants
-    result = await db.execute(
-        select(func.sum(Payment.amount)).filter(
-            Payment.status == 'overdue'
-        )
-    )
-    total_arrears = result.scalar() or 0.0
-    
-    # Count tenants with arrears
-    result = await db.execute(
-        select(func.count(Tenant.id))
-    )
-    total_tenants = result.scalar() or 0
-    
-    return {
-        "total_system_arrears": total_arrears,
-        "total_tenants": total_tenants,
-        "currency": "KES"
-    }

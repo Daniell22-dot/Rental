@@ -7,88 +7,308 @@
     <title>RMS | Tenant Portal</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <script src="https://kit.fontawesome.com/your-code.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 
 <body oncontextmenu="return false;">
     <div id="auth-check" style="display: none;">
         <div class="app-container">
             <aside class="sidebar">
-                <div class="logo">RMS Tenant</div>
+                <div class="logo">
+                    <i class="fas fa-building"></i>
+                    <span>RMS Tenant</span>
+                </div>
                 <nav>
-                    <a href="#" class="active" onclick="showView('home')"><i class="fas fa-home"></i> My Room</a>
-                    <a href="#" onclick="showView('payments')"><i class="fas fa-wallet"></i> Payments</a>
-                    <a href="#" onclick="showView('notifications')"><i class="fas fa-bell"></i> Notifications</a>
-                    <a href="#" onclick="showView('feedback')"><i class="fas fa-comment-alt"></i> Complaints</a>
-                    <a href="#" onclick="showView('settings')"><i class="fas fa-cog"></i> Settings</a>
+                    <a href="#" class="active" onclick="showView('home')">
+                        <i class="fas fa-home"></i> Dashboard
+                    </a>
+                    <a href="#" onclick="showView('property')">
+                        <i class="fas fa-building"></i> My Property
+                    </a>
+                    <a href="#" onclick="showView('payments')">
+                        <i class="fas fa-wallet"></i> Payments
+                    </a>
+                    <a href="#" onclick="showView('maintenance')">
+                        <i class="fas fa-tools"></i> Maintenance
+                    </a>
+                    <a href="#" onclick="showView('notifications')">
+                        <i class="fas fa-bell"></i> Notifications
+                        <span id="notif-badge" class="badge" style="display:none;">0</span>
+                    </a>
+                    <a href="#" onclick="showView('documents')">
+                        <i class="fas fa-file-alt"></i> Documents
+                    </a>
+                    <a href="#" onclick="showView('feedback')">
+                        <i class="fas fa-comment-alt"></i> Complaints
+                    </a>
+                    <a href="#" onclick="showView('settings')">
+                        <i class="fas fa-cog"></i> Settings
+                    </a>
                 </nav>
                 <div class="logout-btn">
-                    <button onclick="logout()" class="btn-text"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                    <button onclick="logout()" class="btn-text">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
                 </div>
             </aside>
 
             <main class="main-content">
                 <header class="top-nav">
-                    <div id="user-display">Account: Loading...</div>
-                    <div class="theme-toggle" onclick="toggleTheme()">
-                        <i class="fas fa-moon"></i>
+                    <div class="user-info">
+                        <span id="user-display">Loading...</span>
+                    </div>
+                    <div class="header-actions">
+                        <button onclick="refreshData()" class="icon-btn" title="Refresh">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <div class="theme-toggle" onclick="toggleTheme()">
+                            <i class="fas fa-moon"></i>
+                        </div>
                     </div>
                 </header>
 
                 <div class="content-body">
+                    <!-- Dashboard View -->
                     <section id="home" class="content-view active">
-                        <h2>Welcome back!</h2>
-                        <div class="stats-grid"
-                            style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-top: 1rem;">
-                            <div id="room-details" class="stat-card">
-                                <!-- Room info will go here -->
-                                Loading your room details...
+                        <div class="welcome-section">
+                            <h2 id="welcome-message">Welcome back!</h2>
+                            <p id="current-date"></p>
+                        </div>
+                        
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-credit-card"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Monthly Rent</span>
+                                    <h3 id="monthly-rent">Ksh --</h3>
+                                </div>
                             </div>
                             <div class="stat-card">
-                                <span class="label">Total Arrears (KES)</span>
-                                <h3 id="tenant-arrears" style="color: var(--danger);">Ksh --</h3>
+                                <div class="stat-icon">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Arrears</span>
+                                    <h3 id="tenant-arrears" style="color: var(--danger);">Ksh --</h3>
+                                </div>
                             </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-calendar-check"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Next Payment Due</span>
+                                    <h4 id="next-due">--</h4>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon">
+                                    <i class="fas fa-tools"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Maintenance Requests</span>
+                                    <h3 id="maintenance-count">0</h3>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="recent-section">
+                            <h3>Recent Payments</h3>
+                            <div id="recent-payments" class="recent-list"></div>
                         </div>
                     </section>
 
+                    <!-- Property View -->
+                    <section id="property" class="content-view">
+                        <h2><i class="fas fa-building"></i> My Property</h2>
+                        <div id="property-details" class="property-card">
+                            <div class="loading">Loading property details...</div>
+                        </div>
+                    </section>
+
+                    <!-- Payments View -->
                     <section id="payments" class="content-view">
-                        <h2>Payments</h2>
-                        <div class="payment-actions" style="margin-top:1.5rem;">
-                            <button class="btn-primary" onclick="payViaApp()">Pay via App (QR)</button>
-                            <div class="manual-mpesa" style="margin-top:1rem;">
-                                <p>Paid outside? Enter MPESA Code:</p>
-                                <input type="text" id="mpesa-code" placeholder="QK82L9..." maxlength="10">
-                                <button onclick="submitMpesaCode()">Verify & Refresh</button>
+                        <h2><i class="fas fa-wallet"></i> Payments</h2>
+                        
+                        <div class="payment-actions card">
+                            <h3>Make a Payment</h3>
+                            <div class="payment-methods">
+                                <button class="method-btn" onclick="payViaMpesa()">
+                                    <i class="fas fa-mobile-alt"></i> M-Pesa
+                                </button>
+                                <button class="method-btn" onclick="payViaCard()">
+                                    <i class="fas fa-credit-card"></i> Card
+                                </button>
+                                <button class="method-btn" onclick="showQRCode()">
+                                    <i class="fas fa-qrcode"></i> Scan QR
+                                </button>
+                            </div>
+                            
+                            <div class="manual-mpesa">
+                                <p>Already paid? Enter M-Pesa confirmation code:</p>
+                                <div class="input-group">
+                                    <input type="text" id="mpesa-code" placeholder="e.g., QK82L9X1F2" maxlength="10">
+                                    <button onclick="submitMpesaCode()" class="btn-primary">Verify Payment</button>
+                                </div>
                             </div>
                         </div>
-                        <div id="payment-history" style="margin-top:2rem;">
-                            <h3>History</h3>
-                            <div id="history-list">Loading history...</div>
+
+                        <div class="payment-history card">
+                            <h3>Payment History</h3>
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Amount</th>
+                                            <th>Method</th>
+                                            <th>Status</th>
+                                            <th>Receipt</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="payment-history-list">
+                                        <tr><td colspan="5" class="text-center">Loading...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </section>
 
+                    <!-- Maintenance View -->
+                    <section id="maintenance" class="content-view">
+                        <h2><i class="fas fa-tools"></i> Maintenance Requests</h2>
+                        
+                        <button class="btn-primary" onclick="showMaintenanceModal()">
+                            <i class="fas fa-plus"></i> New Request
+                        </button>
+
+                        <div id="maintenance-list" class="maintenance-list">
+                            <div class="loading">Loading maintenance requests...</div>
+                        </div>
+                    </section>
+
+                    <!-- Notifications View -->
                     <section id="notifications" class="content-view">
-                        <h2>Notifications</h2>
-                        <div id="notification-list" style="margin-top:1rem;"></div>
-                    </section>
-
-                    <section id="feedback" class="content-view">
-                        <h2>Submit Feedback / Complaint</h2>
-                        <form id="feedback-form" onsubmit="submitFeedback(event)" style="margin-top:1rem;">
-                            <input type="text" id="fb-subject" placeholder="Subject" required>
-                            <textarea id="fb-message" placeholder="Describe your issue..." required></textarea>
-                            <button type="submit">Submit</button>
-                        </form>
-                    </section>
-
-                    <section id="settings" class="content-view">
-                        <h2>Settings</h2>
-                        <div class="setting-item">
-                            <label>Profile Picture</label>
-                            <input type="file" onchange="uploadProfile(this)">
+                        <h2><i class="fas fa-bell"></i> Notifications</h2>
+                        <div class="notification-filters">
+                            <button class="filter-btn active" onclick="filterNotifications('all')">All</button>
+                            <button class="filter-btn" onclick="filterNotifications('unread')">Unread</button>
+                            <button class="filter-btn" onclick="markAllRead()">Mark All Read</button>
                         </div>
-                        <div class="setting-item" style="margin-top:1rem;">
-                            <button onclick="toggleTheme()">Toggle Dark/Light Mode</button>
+                        <div id="notification-list" class="notifications-list"></div>
+                    </section>
+
+                    <!-- Documents View -->
+                    <section id="documents" class="content-view">
+                        <h2><i class="fas fa-file-alt"></i> Documents</h2>
+                        <div id="documents-list" class="documents-grid"></div>
+                    </section>
+
+                    <!-- Feedback View -->
+                    <section id="feedback" class="content-view">
+                        <h2><i class="fas fa-comment-alt"></i> Submit Complaint/Feedback</h2>
+                        <form id="feedback-form" class="feedback-form card" onsubmit="submitFeedback(event)">
+                            <div class="form-group">
+                                <label>Subject</label>
+                                <input type="text" id="fb-subject" placeholder="Brief subject" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Category</label>
+                                <select id="fb-category" required>
+                                    <option value="maintenance">Maintenance Issue</option>
+                                    <option value="noise">Noise Complaint</option>
+                                    <option value="neighbor">Neighbor Issue</option>
+                                    <option value="billing">Billing Question</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Message</label>
+                                <textarea id="fb-message" rows="5" placeholder="Please describe your issue in detail..." required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label>Urgency</label>
+                                <select id="fb-urgency">
+                                    <option value="low">Low</option>
+                                    <option value="medium">Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="urgent">Urgent</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn-primary">Submit Complaint</button>
+                        </form>
+                        
+                        <div class="feedback-history card">
+                            <h3>Your Previous Complaints</h3>
+                            <div id="feedback-history-list"></div>
+                        </div>
+                    </section>
+
+                    <!-- Settings View -->
+                    <section id="settings" class="content-view">
+                        <h2><i class="fas fa-cog"></i> Settings</h2>
+                        
+                        <div class="settings-card">
+                            <h3>Profile Information</h3>
+                            <div class="profile-section">
+                                <div class="profile-avatar-container">
+                                    <img id="profile-avatar" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='%234f46e5'/%3E%3Ctext x='50' y='70' font-size='40' text-anchor='middle' fill='white' font-family='Arial'%3E👤%3C/text%3E%3C/svg%3E" alt="Profile">
+                                    <button onclick="document.getElementById('profile-upload').click()" class="avatar-upload-btn">
+                                        <i class="fas fa-camera"></i>
+                                    </button>
+                                    <input type="file" id="profile-upload" accept="image/*" style="display: none;" onchange="uploadProfileImage(event)">
+                                </div>
+                                <div class="profile-info">
+                                    <p><strong>Name:</strong> <span id="profile-name"></span></p>
+                                    <p><strong>Email:</strong> <span id="profile-email"></span></p>
+                                    <p><strong>Phone:</strong> <span id="profile-phone"></span></p>
+                                    <button onclick="editProfile()" class="btn-secondary">Edit Profile</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="settings-card">
+                            <h3>Security</h3>
+                            <button onclick="changePassword()" class="btn-secondary">
+                                <i class="fas fa-key"></i> Change Password
+                            </button>
+                            <button onclick="enable2FA()" class="btn-secondary">
+                                <i class="fas fa-shield-alt"></i> Enable Two-Factor Auth
+                            </button>
+                        </div>
+
+                        <div class="settings-card">
+                            <h3>Preferences</h3>
+                            <div class="setting-item">
+                                <label>Email Notifications</label>
+                                <input type="checkbox" id="notif-email" onchange="updateNotificationPref('email', this.checked)">
+                            </div>
+                            <div class="setting-item">
+                                <label>SMS Notifications</label>
+                                <input type="checkbox" id="notif-sms" onchange="updateNotificationPref('sms', this.checked)">
+                            </div>
+                            <div class="setting-item">
+                                <label>Payment Reminders</label>
+                                <input type="checkbox" id="notif-payments" checked onchange="updateNotificationPref('payments', this.checked)">
+                            </div>
+                            <div class="setting-item">
+                                <label>Dark Mode</label>
+                                <button onclick="toggleTheme()" class="btn-secondary">
+                                    <i class="fas" id="settings-theme-icon"></i> Toggle Theme
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="settings-card">
+                            <h3>Data Management</h3>
+                            <button onclick="exportMyData()" class="btn-secondary">
+                                <i class="fas fa-download"></i> Export My Data
+                            </button>
+                            <button onclick="requestAccountDeletion()" class="btn-danger">
+                                <i class="fas fa-trash"></i> Request Account Deletion
+                            </button>
                         </div>
                     </section>
                 </div>
@@ -96,27 +316,71 @@
         </div>
     </div>
 
+    <!-- Login Screen -->
     <div id="login-screen" class="auth-page">
         <div class="auth-container">
-            <h2>Sign In</h2>
+            <div class="auth-header">
+                <i class="fas fa-building"></i>
+                <h2>Rental Management System</h2>
+                <p>Tenant Portal Login</p>
+            </div>
             <form onsubmit="handleLogin(event)">
-                <input type="email" id="login-email" placeholder="Email Address" required>
-                <input type="password" id="login-pass" placeholder="Password" required>
-
+                <div class="form-group">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" id="login-email" placeholder="Email Address" required autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="login-pass" placeholder="Password" required autocomplete="current-password">
+                </div>
                 <div class="captcha-container">
                     <span class="captcha-question" id="captcha-q">Loading...</span>
                     <input type="text" id="captcha-ans" class="captcha-input" placeholder="?" required>
                 </div>
-
-                <button type="submit">Login</button>
+                <button type="submit" class="btn-primary btn-block">Sign In</button>
             </form>
-
-            <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem;">
-                <p>New here? <a href="register.html">Create Tenant Account</a></p>
-                <a href="#" onclick="forgotPassword()" style="font-size: 0.9rem;">Forgot password?</a>
-                <hr style="border: none; border-top: 1px solid var(--border); margin: 0.5rem 0;">
-                <a href="policies.html" style="font-size: 0.85rem; color: var(--text-muted);">Privacy Policy & Terms</a>
+            <div class="auth-footer">
+                <a href="#" onclick="forgotPassword()">Forgot Password?</a>
+                <span>|</span>
+                <a href="register.html">Create Account</a>
             </div>
+            <div class="auth-links">
+                <a href="policies.html">Privacy Policy</a>
+                <a href="policies.html">Terms of Service</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="maintenance-modal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeMaintenanceModal()">&times;</span>
+            <h3>New Maintenance Request</h3>
+            <form id="maintenance-form" onsubmit="createMaintenanceRequest(event)">
+                <div class="form-group">
+                    <label>Issue Type</label>
+                    <select id="maint-type" required>
+                        <option value="plumbing">Plumbing</option>
+                        <option value="electrical">Electrical</option>
+                        <option value="appliance">Appliance</option>
+                        <option value="furniture">Furniture</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="maint-description" rows="4" required placeholder="Please describe the issue in detail..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Preferred Time</label>
+                    <select id="maint-time">
+                        <option value="morning">Morning (8AM - 12PM)</option>
+                        <option value="afternoon">Afternoon (12PM - 5PM)</option>
+                        <option value="anytime">Anytime</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary">Submit Request</button>
+            </form>
         </div>
     </div>
 

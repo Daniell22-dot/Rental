@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RMS | Landlord Portal</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div id="landlord-app">
+        <div class="app-container">
+            <aside class="sidebar">
+                <div class="logo">
+                    <i class="fas fa-chart-line"></i>
+                    <span>RMS Landlord</span>
+                </div>
+                <nav>
+                    <a href="#" class="active" onclick="showLandlordView('dashboard')">
+                        <i class="fas fa-chart-pie"></i> Dashboard
+                    </a>
+                    <a href="#" onclick="showLandlordView('properties')">
+                        <i class="fas fa-building"></i> Properties
+                    </a>
+                    <a href="#" onclick="showLandlordView('tenants')">
+                        <i class="fas fa-users"></i> Tenants
+                    </a>
+                    <a href="#" onclick="showLandlordView('payments')">
+                        <i class="fas fa-money-bill-wave"></i> Payments
+                    </a>
+                    <a href="#" onclick="showLandlordView('maintenance')">
+                        <i class="fas fa-tools"></i> Maintenance
+                    </a>
+                    <a href="#" onclick="showLandlordView('reports')">
+                        <i class="fas fa-file-alt"></i> Reports
+                    </a>
+                </nav>
+                <div class="logout-btn">
+                    <button onclick="logout()" class="btn-text">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </aside>
+
+            <main class="main-content">
+                <header class="top-nav">
+                    <h1 id="view-title">Landlord Dashboard</h1>
+                    <div class="theme-toggle" onclick="toggleTheme()">
+                        <i class="fas fa-moon"></i>
+                    </div>
+                </header>
+
+                <div class="content-body">
+                    <div id="dashboard" class="content-view active">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-icon"><i class="fas fa-building"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Total Properties</span>
+                                    <h3 id="total-properties">0</h3>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon"><i class="fas fa-users"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Total Tenants</span>
+                                    <h3 id="total-tenants">0</h3>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon"><i class="fas fa-credit-card"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Monthly Revenue</span>
+                                    <h3 id="monthly-revenue">Ksh 0</h3>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Overdue Payments</span>
+                                    <h3 id="overdue-amount" style="color: var(--danger);">Ksh 0</h3>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <h3>Revenue Overview</h3>
+                            <canvas id="revenue-chart" style="max-height: 300px;"></canvas>
+                        </div>
+                        
+                        <div class="card">
+                            <h3>Recent Payments</h3>
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead><tr><th>Tenant</th><th>Property</th><th>Amount</th><th>Date</th><th>Status</th></tr></thead>
+                                    <tbody id="recent-payments-table"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="properties" class="content-view">
+                        <button class="btn-primary" onclick="addProperty()"><i class="fas fa-plus"></i> Add Property</button>
+                        <div id="properties-list" class="properties-grid"></div>
+                    </div>
+
+                    <div id="tenants" class="content-view">
+                        <div id="tenants-list" class="table-container">
+                            <table class="data-table">
+                                <thead><tr><th>Name</th><th>Property</th><th>Phone</th><th>Rent</th><th>Status</th><th>Actions</th></tr></thead>
+                                <tbody id="tenants-table-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="payments" class="content-view">
+                        <div class="card">
+                            <h3>Payment Overview</h3>
+                            <div id="payments-summary"></div>
+                        </div>
+                        <div class="card">
+                            <h3>All Payments</h3>
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead><tr><th>Tenant</th><th>Amount</th><th>Date</th><th>Method</th><th>Status</th></tr></thead>
+                                    <tbody id="all-payments-table"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="maintenance" class="content-view">
+                        <div id="maintenance-requests-list"></div>
+                    </div>
+
+                    <div id="reports" class="content-view">
+                        <div class="card">
+                            <h3>Generate Report</h3>
+                            <select id="report-type" class="form-control">
+                                <option value="revenue">Revenue Report</option>
+                                <option value="tenants">Tenants Report</option>
+                                <option value="maintenance">Maintenance Report</option>
+                            </select>
+                            <button onclick="generateReport()" class="btn-primary">Generate</button>
+                        </div>
+                        <div id="report-output"></div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <script src="landlord.js"></script>
+</body>
+
+</html>

@@ -15,6 +15,9 @@ from app.core.security import (
 )
 from app.models.users import User, UserRole
 from pydantic import BaseModel, EmailStr
+import logging
+
+logger = logging.getLogger(__name__)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login")
 

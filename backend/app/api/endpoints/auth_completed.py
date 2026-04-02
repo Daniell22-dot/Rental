@@ -1,4 +1,4 @@
-# backend/app/api/endpoints/auth.py (completed version)
+# backend/app/api/endpoints/auth.py 
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
