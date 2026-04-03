@@ -13,10 +13,20 @@ function switchRole(role) {
     if (document.getElementById('users').classList.contains('active')) fetchTenants();
 }
 
+const ADMIN_API_BASE_URL = window.location.hostname === 'localhost' ? 'http://localhost:8001' : '';
+
+function ensureAdminPort() {
+    if (window.location.hostname === 'localhost' && window.location.port !== '5000') {
+        window.location.href = `http://localhost:5000${window.location.pathname}`;
+    }
+}
+
+ensureAdminPort();
+
 async function fetchAdminStats() {
     try {
         const token = localStorage.getItem('rms-token');
-        const response = await fetch('/api/v1/admin/stats', {
+        const response = await fetch(`${ADMIN_API_BASE_URL}/api/v1/admin/stats`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
@@ -29,12 +39,16 @@ async function fetchAdminStats() {
     }
 }
 
-function showAdminView(viewId) {
+function showAdminView(viewId, event) {
+    if (event && typeof event.preventDefault === 'function') {
+        event.preventDefault();
+    }
+
     document.querySelectorAll('.content-view').forEach(v => v.classList.remove('active'));
-    document.getElementById(viewId).classList.add('active');
+    const view = document.getElementById(viewId);
+    if (view) view.classList.add('active');
 
     document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
-    // Find the link that calls this viewId
     const activeLink = Array.from(document.querySelectorAll('nav a')).find(a => a.getAttribute('onclick')?.includes(viewId));
     if (activeLink) activeLink.classList.add('active');
 
@@ -44,7 +58,7 @@ function showAdminView(viewId) {
 async function fetchTenants() {
     try {
         const token = localStorage.getItem('rms-token');
-        const response = await fetch('/api/v1/tenants/', {
+        const response = await fetch(`${ADMIN_API_BASE_URL}/api/v1/tenants/`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const tenants = await response.json();
@@ -75,7 +89,7 @@ async function fetchAINarrative() {
 
     try {
         const token = localStorage.getItem('rms-token');
-        const res = await fetch('/api/v1/reports/ai-narrative', {
+        const res = await fetch(`${ADMIN_API_BASE_URL}/api/v1/reports/ai-narrative`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -90,6 +104,13 @@ async function fetchAINarrative() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Check authentication
+    const token = localStorage.getItem('rms-token');
+    if (!token) {
+        window.location.href = 'index.html';
+        return;
+    }
+    
     fetchAdminStats();
     fetchAINarrative();
     const savedRole = localStorage.getItem('rms-admin-role') || 'owner';

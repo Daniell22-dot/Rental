@@ -49,7 +49,7 @@ class Property(BaseModel):
     
     # Relationships
     owner = relationship("User", back_populates="properties")
-    units = relationship("Unit", back_populates="related_property", cascade="all, delete-orphan")
+    units = relationship("Unit", back_populates="property", cascade="all, delete-orphan")
     documents = relationship("Document", back_populates="property")
     maintenance_requests = relationship("MaintenanceRequest", back_populates="property")
     
@@ -63,33 +63,3 @@ class Property(BaseModel):
             return 0
         rented = sum(1 for unit in self.units if unit.is_rented)
         return (rented / len(self.units)) * 100
-
-class Unit(BaseModel):
-    __tablename__ = 'units'
-    
-    unit_number = Column(String(50), nullable=False)
-    property_id = Column(Integer, ForeignKey('properties.id'))
-    bedrooms = Column(Integer, default=1)
-    bathrooms = Column(Float, default=1)
-    area = Column(Float)  # sq ft
-    floor = Column(Integer)
-    monthly_rent = Column(Float, nullable=False)
-    security_deposit = Column(Float)
-    is_rented = Column(Boolean, default=False)
-    is_available = Column(Boolean, default=True)
-    
-    # Unit specific features
-    amenities = Column(JSONB, default=list)
-    
-    # Relationships
-    related_property = relationship("Property", back_populates="units")
-    leases = relationship("Lease", back_populates="unit")
-    tenants = relationship("Tenant", back_populates="unit")
-    
-    @property
-    def current_tenant(self):
-        active_lease = next(
-            (lease for lease in self.leases if lease.status == 'active'),
-            None
-        )
-        return active_lease.tenant if active_lease else None

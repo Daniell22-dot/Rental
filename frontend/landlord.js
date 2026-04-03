@@ -5,6 +5,14 @@
 // Global variable to store the revenue chart instance for later updates
 let revenueChart = null;
 
+function ensureLandlordPort() {
+    if (window.location.hostname === 'localhost' && window.location.port !== '3000') {
+        window.location.href = `http://localhost:3000${window.location.pathname}`;
+    }
+}
+
+ensureLandlordPort();
+
 async function initLandlordApp() {
     const token = localStorage.getItem('rms-token');
     if (!token) {

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RMS | Admin Login</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body oncontextmenu="return false;">
+    <div id="login-screen" class="auth-page">
+        <div class="auth-container">
+            <div class="auth-header">
+                <i class="fas fa-shield-alt"></i>
+                <h2>RMS Admin Login</h2>
+                <p>Administrator Access</p>
+            </div>
+            <form onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" id="login-email" placeholder="Admin Email" required autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="login-pass" placeholder="Password" required autocomplete="current-password">
+                </div>
+                <div class="captcha-container">
+                    <span class="captcha-question" id="captcha-q">Loading...</span>
+                    <input type="text" id="captcha-ans" class="captcha-input" placeholder="?" required>
+                </div>
+                <button type="submit" class="btn-primary btn-block">Sign In as Admin</button>
+            </form>
+            <div class="auth-footer">
+                <a href="http://localhost:8001/index.html">Tenant Portal</a>
+                <span>|</span>
+                <a href="http://localhost:3000/landlord-login.html">Landlord Login</a>
+            </div>
+            <div class="auth-links">
+                <a href="policies.html">Privacy Policy</a>
+                <a href="policies.html">Terms of Service</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>

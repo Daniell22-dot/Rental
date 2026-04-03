@@ -28,17 +28,107 @@ function updateThemeIcon(theme) {
     }
 }
 
+// Configuration
+const API_BASE_URL = window.location.hostname === 'localhost' ? 'http://localhost:8001' : '';
+const LANDLORD_UI_PORT = 3000;
+const ADMIN_UI_PORT = 5000;
+const ADMIN_API_BASE_URL = window.location.hostname === 'localhost' ? 'http://localhost:8001' : '';
+
+const LANDLORD_UI_BASE = window.location.hostname === 'localhost'
+    ? `http://localhost:${LANDLORD_UI_PORT}`
+    : `${window.location.protocol}//${window.location.hostname}`;
+
+const ADMIN_UI_BASE = window.location.hostname === 'localhost'
+    ? `http://localhost:${ADMIN_UI_PORT}`
+    : `${window.location.protocol}//${window.location.hostname}`;
+
+// Utility function for safe API calls with error handling
+async function apiCall(url, options = {}) {
+    const token = localStorage.getItem('rms-token');
+    const headers = {
+        ...options.headers,
+        'Authorization': `Bearer ${token}`
+    };
+    
+    try {
+        const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
+        const response = await fetch(fullUrl, {
+            ...options,
+            headers
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ detail: `HTTP ${response.status}` }));
+            throw new Error(errorData.detail || `API Error: ${response.status}`);
+        }
+        
+        return await response.json();
+    } catch (err) {
+        console.error(`API call failed for ${url}:`, err);
+        throw err;
+    }
+}
+
 // Auth Logic
+// Check for developer mode (bypass CAPTCHA)
+const isDevMode = new URLSearchParams(window.location.search).has('dev');
+
 let captchaAnswer = 0;
+let regCaptchaAnswer = 0;
 
 function generateCaptcha() {
     const q = document.getElementById('captcha-q');
-    if (!q) return;
+    if (!q) {
+        console.warn('CAPTCHA element not found');
+        return;
+    }
+
+    // Only generate if the element is visible (login screen is shown)
+    const loginScreen = document.getElementById('login-screen');
+    if (loginScreen && loginScreen.style.display === 'none') {
+        return; // Don't generate if login screen is hidden
+    }
+
+    if (isDevMode) {
+        captchaAnswer = 0;
+        q.textContent = 'Dev Mode: Enter 0';
+        console.log('CAPTCHA bypassed for development');
+        const input = document.getElementById('captcha-ans');
+        if (input) input.value = '0';
+        return;
+    }
+
     const n1 = Math.floor(Math.random() * 10);
     const n2 = Math.floor(Math.random() * 10);
     captchaAnswer = n1 + n2;
     q.textContent = `Verify: ${n1} + ${n2} = ?`;
+    console.log('CAPTCHA generated:', n1 + ' + ' + n2 + ' = ' + captchaAnswer);
     const input = document.getElementById('captcha-ans');
+    if (input) input.value = '';
+}
+
+function generateRegCaptcha() {
+    const q = document.getElementById('reg-captcha-q');
+    if (!q) {
+        console.warn('Registration CAPTCHA element not found');
+        return;
+    }
+
+    if (isDevMode) {
+        regCaptchaAnswer = 0;
+        q.textContent = 'Dev Mode: Enter 0';
+        console.log('Registration CAPTCHA bypassed for development');
+        const input = document.getElementById('reg-captcha-ans');
+        if (input) input.value = '0';
+        return;
+    }
+
+    const n1 = Math.floor(Math.random() * 10);
+    const n2 = Math.floor(Math.random() * 10);
+    regCaptchaAnswer = n1 + n2;
+    q.textContent = `Verify: ${n1} + ${n2} = ?`;
+    console.log('Registration CAPTCHA generated:', n1 + ' + ' + n2 + ' = ' + regCaptchaAnswer);
+    const input = document.getElementById('reg-captcha-ans');
     if (input) input.value = '';
 }
 
@@ -47,6 +137,12 @@ async function handleLogin(event) {
     const email = document.getElementById('login-email').value;
     const pass = document.getElementById('login-pass').value;
     const userCaptcha = document.getElementById('captcha-ans').value;
+
+    // Fallback: Generate CAPTCHA if it's still showing "Loading..."
+    const captchaElement = document.getElementById('captcha-q');
+    if (captchaElement && captchaElement.textContent === 'Loading...') {
+        generateCaptcha();
+    }
 
     if (parseInt(userCaptcha) !== captchaAnswer) {
         alert('Incorrect verification code. Please try again.');
@@ -64,15 +160,52 @@ async function handleLogin(event) {
         formData.append('username', email);
         formData.append('password', pass);
 
-        const response = await fetch('/api/v1/auth/login', {
+        // Create abort controller with 15 second timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+        const response = await fetch(`${API_BASE_URL}/api/v1/auth/login`, {
             method: 'POST',
-            body: formData
+            body: formData,
+            signal: controller.signal
         });
+
+        clearTimeout(timeoutId);
 
         if (response.ok) {
             const data = await response.json();
             localStorage.setItem('rms-token', data.access_token);
-            window.location.href = 'index.html';
+            
+            // Fetch user info to determine role and redirect appropriately
+            try {
+                const userRes = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${data.access_token}` }
+                });
+                if (userRes.ok) {
+                    const userData = await userRes.json();
+                    // Redirect based on user role
+                    switch (userData.role) {
+                        case 'admin':
+                        case 'property_manager':
+                            window.location.href = `${ADMIN_UI_BASE}/admin.html`;
+                            break;
+                        case 'landlord':
+                            window.location.href = `${LANDLORD_UI_BASE}/landlord.html`;
+                            break;
+                        case 'tenant':
+                        default:
+                            window.location.href = 'index.html';
+                            break;
+                    }
+                } else {
+                    // Fallback to tenant portal if we can't get user info
+                    window.location.href = 'index.html';
+                }
+            } catch (err) {
+                console.error('Error fetching user info after login:', err);
+                // Fallback to tenant portal
+                window.location.href = 'index.html';
+            }
         } else {
             const error = await response.json();
             alert('Login failed: ' + (error.detail || 'Invalid credentials'));
@@ -80,10 +213,87 @@ async function handleLogin(event) {
         }
     } catch (err) {
         console.error('Login error:', err);
-        alert('Network error. Please check your connection.');
+        if (err.name === 'AbortError') {
+            alert('Login timeout. The server is not responding. Please check your network and try again.');
+        } else {
+            alert('Network error. Please check your connection.');
+        }
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
+        generateCaptcha();
+    }
+}
+
+async function handleRegistration(event) {
+    event.preventDefault();
+    const firstName = document.getElementById('reg-first').value;
+    const lastName = document.getElementById('reg-last').value;
+    const email = document.getElementById('reg-email').value;
+    const phone = document.getElementById('reg-phone').value;
+    const password = document.getElementById('reg-pass').value;
+    const userCaptcha = document.getElementById('reg-captcha-ans').value;
+    const termsAccepted = document.getElementById('reg-tos').checked;
+
+    // Fallback: Generate CAPTCHA if it's still showing "Loading captcha..."
+    const captchaElement = document.getElementById('reg-captcha-q');
+    if (captchaElement && captchaElement.textContent === 'Loading captcha...') {
+        generateRegCaptcha();
+    }
+
+    // Validate CAPTCHA
+    if (parseInt(userCaptcha) !== regCaptchaAnswer) {
+        alert('Incorrect verification code. Please try again.');
+        generateRegCaptcha();
+        return;
+    }
+
+    // Validate terms acceptance
+    if (!termsAccepted) {
+        alert('You must accept the Terms of Service to create an account.');
+        return;
+    }
+
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creating Account...';
+
+    try {
+        const userData = {
+            email: email,
+            phone: phone,
+            password: password,
+            first_name: firstName,
+            last_name: lastName,
+            role: 'tenant', // Default role
+            terms_accepted: termsAccepted
+        };
+
+        const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(userData)
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            alert('Account created successfully! You can now log in.');
+            window.location.href = 'index.html';
+        } else {
+            const error = await response.json();
+            alert('Registration failed: ' + (error.detail || 'Please try again.'));
+            generateRegCaptcha();
+        }
+    } catch (err) {
+        console.error('Registration error:', err);
+        alert('Network error. Please check your connection and try again.');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
+        generateRegCaptcha();
     }
 }
 
@@ -104,7 +314,10 @@ function checkAuth() {
     } else {
         if (authCheck) authCheck.style.display = 'none';
         if (loginScreen) loginScreen.style.display = 'block';
+        // Generate CAPTCHA immediately when login screen is shown
         generateCaptcha();
+        const emailInput = document.getElementById('login-email');
+        if (emailInput) emailInput.focus();
     }
 }
 
@@ -116,7 +329,7 @@ async function initApp() {
 
     try {
         // Get user info
-        const userRes = await fetch('/api/v1/auth/me', {
+        const userRes = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (userRes.ok) {
@@ -155,27 +368,23 @@ async function initApp() {
 
 // Dashboard Data
 async function loadDashboardData() {
-    const token = localStorage.getItem('rms-token');
-    
     try {
         // Load arrears
-        const arrearsRes = await fetch('/api/v1/arrears/my', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (arrearsRes.ok) {
-            const data = await arrearsRes.json();
-            document.getElementById('tenant-arrears').textContent = `Ksh ${data.arrears.toLocaleString()}`;
+        try {
+            const arrears = await apiCall('/api/v1/arrears/my');
+            document.getElementById('tenant-arrears').textContent = `Ksh ${arrears.arrears.toLocaleString()}`;
+        } catch (err) {
+            console.warn('Could not load arrears:', err.message);
         }
         
         // Load monthly rent
-        const propertyRes = await fetch('/api/v1/properties/my', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (propertyRes.ok) {
-            const properties = await propertyRes.json();
+        try {
+            const properties = await apiCall('/api/v1/properties/my');
             if (properties && properties.length > 0) {
                 document.getElementById('monthly-rent').textContent = `Ksh ${properties[0].monthly_rent?.toLocaleString() || '0'}`;
             }
+        } catch (err) {
+            console.warn('Could not load properties:', err.message);
         }
         
         // Set next due date (5th of next month)
@@ -226,20 +435,16 @@ function showView(viewId) {
 
 // Notifications
 async function loadNotifications() {
-    const token = localStorage.getItem('rms-token');
     const list = document.getElementById('notification-list');
     
     try {
-        const res = await fetch('/api/v1/notifications/', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        allNotifications = await res.json();
+        allNotifications = await apiCall('/api/v1/notifications/');
         
         updateNotificationBadge();
         renderNotifications(currentFilter);
     } catch (err) {
         console.error('Error loading notifications:', err);
-        if (list) list.innerHTML = '<div class="card">Error loading notifications.</div>';
+        if (list) list.innerHTML = '<div class="card">Error loading notifications: ' + err.message + '</div>';
     }
 }
 
@@ -285,7 +490,7 @@ function filterNotifications(filter) {
 async function markNotificationRead(id) {
     const token = localStorage.getItem('rms-token');
     try {
-        await fetch(`/api/v1/notifications/${id}/read`, {
+        await fetch(`${API_BASE_URL}/api/v1/notifications/${id}/read`, {
             method: 'PUT',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -299,7 +504,7 @@ async function markAllRead() {
     const token = localStorage.getItem('rms-token');
     try {
         for (const notif of allNotifications.filter(n => !n.is_read)) {
-            await fetch(`/api/v1/notifications/${notif.id}/read`, {
+            await fetch(`${API_BASE_URL}/api/v1/notifications/${notif.id}/read`, {
                 method: 'PUT',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -325,14 +530,10 @@ function updateNotificationBadge() {
 
 // Payment History
 async function loadPaymentHistory() {
-    const token = localStorage.getItem('rms-token');
     const tbody = document.getElementById('payment-history-list');
     
     try {
-        const res = await fetch('/api/v1/payments/my', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const payments = await res.json();
+        const payments = await apiCall('/api/v1/payments/my');
         
         if (!payments || payments.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5" class="text-center">No payment history found.</td></tr>';
@@ -350,20 +551,16 @@ async function loadPaymentHistory() {
         `).join('');
     } catch (err) {
         console.error('Error loading payments:', err);
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Error loading payment history.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center">Error loading payment history: ' + err.message + '</td></tr>';
     }
 }
 
 // Maintenance Requests
 async function loadMaintenanceRequests() {
-    const token = localStorage.getItem('rms-token');
     const container = document.getElementById('maintenance-list');
     
     try {
-        const res = await fetch('/api/v1/maintenance/my', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const requests = await res.json();
+        const requests = await apiCall('/api/v1/maintenance/my');
         
         if (!requests || requests.length === 0) {
             container.innerHTML = '<div class="card">No maintenance requests found.</div>';
@@ -382,7 +579,7 @@ async function loadMaintenanceRequests() {
         `).join('');
     } catch (err) {
         console.error('Error loading maintenance:', err);
-        container.innerHTML = '<div class="card">Error loading maintenance requests.</div>';
+        container.innerHTML = '<div class="card">Error loading maintenance requests: ' + err.message + '</div>';
     }
 }
 
@@ -405,7 +602,7 @@ async function createMaintenanceRequest(event) {
     };
     
     try {
-        const res = await fetch('/api/v1/maintenance', {
+        const res = await fetch(`${API_BASE_URL}/api/v1/maintenance`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -430,14 +627,10 @@ async function createMaintenanceRequest(event) {
 
 // Documents
 async function loadDocuments() {
-    const token = localStorage.getItem('rms-token');
     const container = document.getElementById('documents-list');
     
     try {
-        const res = await fetch('/api/v1/documents/my', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const documents = await res.json();
+        const documents = await apiCall('/api/v1/documents/my');
         
         if (!documents || documents.length === 0) {
             container.innerHTML = '<div class="card">No documents available.</div>';
@@ -454,14 +647,13 @@ async function loadDocuments() {
         `).join('');
     } catch (err) {
         console.error('Error loading documents:', err);
-        container.innerHTML = '<div class="card">Error loading documents.</div>';
+        container.innerHTML = '<div class="card">Error loading documents: ' + err.message + '</div>';
     }
 }
 
 // Feedback
 async function submitFeedback(event) {
     event.preventDefault();
-    const token = localStorage.getItem('rms-token');
     
     const feedbackData = {
         subject: document.getElementById('fb-subject').value,
@@ -471,37 +663,26 @@ async function submitFeedback(event) {
     };
     
     try {
-        const res = await fetch('/api/v1/interactions/feedback', {
+        await apiCall('/api/v1/interactions/feedback', {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(feedbackData)
         });
         
-        if (res.ok) {
-            alert('Feedback submitted successfully!');
-            event.target.reset();
-            loadFeedbackHistory();
-        } else {
-            alert('Failed to submit feedback. Please try again.');
-        }
+        alert('Feedback submitted successfully!');
+        event.target.reset();
+        await loadFeedbackHistory();
     } catch (err) {
         console.error('Error submitting feedback:', err);
-        alert('Network error. Please try again.');
+        alert('Failed to submit feedback: ' + err.message);
     }
 }
 
 async function loadFeedbackHistory() {
-    const token = localStorage.getItem('rms-token');
     const container = document.getElementById('feedback-history-list');
     
     try {
-        const res = await fetch('/api/v1/interactions/my-feedback', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const feedbacks = await res.json();
+        const feedbacks = await apiCall('/api/v1/interactions/my-feedback');
         
         if (!feedbacks || feedbacks.length === 0) {
             container.innerHTML = '<div class="card">No feedback history.</div>';
@@ -520,6 +701,7 @@ async function loadFeedbackHistory() {
         `).join('');
     } catch (err) {
         console.error('Error loading feedback:', err);
+        container.innerHTML = '<div class="card">Error loading feedback: ' + err.message + '</div>';
     }
 }
 
@@ -545,7 +727,7 @@ async function submitMpesaCode() {
     
     const token = localStorage.getItem('rms-token');
     try {
-        const res = await fetch('/api/v1/payments/verify-mpesa', {
+        const res = await fetch(`${API_BASE_URL}/api/v1/payments/verify-mpesa`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -633,8 +815,42 @@ function refreshData() {
     initApp();
 }
 
-function forgotPassword() {
-    alert('Password reset link will be sent to your email.');
+function checkPasswordStrength() {
+    const password = document.getElementById('reg-pass').value;
+    const strengthDiv = document.getElementById('password-strength');
+    
+    if (!password) {
+        strengthDiv.textContent = '';
+        return;
+    }
+    
+    let strength = 0;
+    let feedback = [];
+    
+    if (password.length >= 8) strength++;
+    else feedback.push('8+ characters');
+    
+    if (/[a-z]/.test(password)) strength++;
+    else feedback.push('lowercase');
+    
+    if (/[A-Z]/.test(password)) strength++;
+    else feedback.push('uppercase');
+    
+    if (/\d/.test(password)) strength++;
+    else feedback.push('number');
+    
+    if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) strength++;
+    else feedback.push('special character');
+    
+    const colors = ['#ff4444', '#ffaa00', '#aaff00', '#00aa00', '#00aa00'];
+    const texts = ['Very Weak', 'Weak', 'Fair', 'Good', 'Strong'];
+    
+    strengthDiv.textContent = `Password strength: ${texts[strength]}`;
+    strengthDiv.style.color = colors[strength];
+    
+    if (strength < 4) {
+        strengthDiv.textContent += ` (Missing: ${feedback.join(', ')})`;
+    }
 }
 
 // Utility Functions
@@ -656,7 +872,10 @@ function updateSettingsThemeIcon() {
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     initTheme();
-    checkAuth();
+    // Small delay to ensure DOM is fully ready
+    setTimeout(() => {
+        checkAuth();
+    }, 50);
 });
 
 window.onerror = function(msg, url, lineNo, columnNo, error) {

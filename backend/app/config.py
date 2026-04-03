@@ -18,8 +18,8 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: Optional[str] = os.getenv("DATABASE_URL")
     DB_ECHO: bool = False
-    DB_POOL_SIZE: int = 5
-    DB_MAX_OVERFLOW: int = 10
+    DB_POOL_SIZE: int = 20
+    DB_MAX_OVERFLOW: int = 40
     
     # JWT (REQUIRED)
     SECRET_KEY: str = os.getenv("SECRET_KEY")

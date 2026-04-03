@@ -6,6 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models.users import User
 from app.config import settings
+import logging
+import time
+
+logger = logging.getLogger(__name__)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
@@ -46,10 +50,20 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
     return encoded_jwt
 
 async def authenticate_user(db: AsyncSession, email: str, password: str) -> Union[User, bool]:
-    result = await db.execute(select(User).filter(User.email == email))
-    user = result.scalars().first()
-    if not user:
+    start_time = time.time()
+    try:
+        result = await db.execute(select(User).filter(User.email == email))
+        user = result.scalars().first()
+        if not user:
+            return False
+        if not verify_password(password, user.hashed_password):
+            return False
+        
+        elapsed = time.time() - start_time
+        if elapsed > 1:
+            logger.warning(f"Slow authentication for {email}: {elapsed:.2f}s")
+        
+        return user
+    except Exception as e:
+        logger.error(f"Authentication error for {email}: {str(e)}")
         return False
-    if not verify_password(password, user.hashed_password):
-        return False
-    return user

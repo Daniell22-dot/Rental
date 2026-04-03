@@ -13,7 +13,7 @@ from app.api.endpoints import (
 from datetime import datetime
 from app.core.database import engine, Base
 from app.config import settings
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 import os
 from app.tasks.scheduler import start_scheduler
 
@@ -98,6 +98,24 @@ async def health_check():
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat()
     }
+
+# Redirect admin/landlord UI requests on port 8001 to separate ports
+@app.get("/admin-login.html")
+async def admin_login_redirect():
+    return RedirectResponse(url="http://localhost:5000/admin-login.html")
+
+@app.get("/admin.html")
+async def admin_redirect():
+    return RedirectResponse(url="http://localhost:5000/admin.html")
+
+@app.get("/landlord-login.html")
+async def landlord_login_redirect():
+    return RedirectResponse(url="http://localhost:3000/landlord-login.html")
+
+@app.get("/landlord.html")
+async def landlord_redirect():
+    return RedirectResponse(url="http://localhost:3000/landlord.html")
+
 # Mount static files
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FRONTEND_DIR = os.path.abspath(os.path.join(BASE_DIR, "../../frontend"))
