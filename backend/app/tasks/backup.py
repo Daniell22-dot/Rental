@@ -12,7 +12,7 @@ def run_backup():
     In production, this would use a tool like pg_dump or sqlite3 .backup
     """
     backup_dir = "backups"
-    if not os.path.exists(backup_dir):
+    if not os.path.exists(backup_dir) and not os.environ.get("VERCEL"):
         os.makedirs(backup_dir)
         
     db_path = "rms_database.db" # Assuming SQLite for this project

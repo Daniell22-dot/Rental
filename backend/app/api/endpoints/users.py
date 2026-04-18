@@ -13,7 +13,9 @@ import uuid
 router = APIRouter()
 
 UPLOAD_DIR = "static/uploads/profiles"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+# Only create directory if NOT on Vercel (read-only FS)
+if not os.environ.get("VERCEL"):
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @router.post("/profile-photo")
 async def upload_profile_photo(
@@ -43,6 +45,6 @@ async def upload_profile_photo(
         )
         await db.commit()
         
-        return {"profile_picture": f"http://localhost:8001/static/uploads/profiles/{filename}"}
+        return {"profile_picture": f"/static/uploads/profiles/{filename}"}
     except Exception as e:
         raise HTTPException(status_code=500, detail="Upload failed")
