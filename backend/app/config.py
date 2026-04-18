@@ -17,6 +17,15 @@ class Settings(BaseSettings):
     
     # Database
     DATABASE_URL: Optional[str] = os.getenv("DATABASE_URL")
+    
+    @property
+    def ASYNC_DATABASE_URL(self) -> Optional[str]:
+        if not self.DATABASE_URL:
+            return None
+        if self.DATABASE_URL.startswith("postgresql://"):
+            return self.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return self.DATABASE_URL
+
     DB_ECHO: bool = False
     DB_POOL_SIZE: int = 20
     DB_MAX_OVERFLOW: int = 40

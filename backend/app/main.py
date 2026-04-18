@@ -11,7 +11,7 @@ from app.api.endpoints import (
     notifications, interaction, monitoring, arrears
 )
 from datetime import datetime
-from app.core.database import engine, Base
+from app.core.database import engine, Base, AsyncSessionLocal
 from app.config import settings
 from fastapi.responses import FileResponse, RedirectResponse
 import os
@@ -93,6 +93,13 @@ from app.api.endpoints import admin, users
 app.include_router(admin.router, prefix=f"{settings.API_V1_STR}/admin", tags=["Admin"])
 app.include_router(users.router, prefix=f"{settings.API_V1_STR}/users", tags=["Users"])
 
+@app.get(f"{settings.API_V1_STR}/cron/rent-reminders")
+async def trigger_reminders():
+    """Triggered by Vercel Cron to send daily reminders"""
+    from app.tasks.reminders import send_rent_reminders
+    await send_rent_reminders()
+    return {"status": "reminders_sent", "timestamp": datetime.utcnow().isoformat()}
+
 @app.get("/health")
 async def health_check():
     return {
@@ -114,6 +121,9 @@ if not os.path.exists(FRONTEND_DIR):
 
 # Mount static files
 app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+
+# Vercel handler export
+handler = app
 
 @app.get("/admin")
 async def serve_admin_login():

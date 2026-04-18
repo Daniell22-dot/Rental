@@ -9,8 +9,11 @@ from typing import AsyncGenerator
 logger = logging.getLogger(__name__)
 
 # Create async engine with optimized connection pooling
+if not settings.ASYNC_DATABASE_URL:
+    raise ValueError("DATABASE_URL must be set in Environment Variables")
+
 engine = create_async_engine(
-    settings.DATABASE_URL.replace('postgresql://', 'postgresql+asyncpg://'),
+    settings.ASYNC_DATABASE_URL,
     echo=settings.DB_ECHO,
     pool_pre_ping=True,
     pool_size=settings.DB_POOL_SIZE,
