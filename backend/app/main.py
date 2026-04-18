@@ -112,15 +112,24 @@ async def health_check():
 
 # Mount static files
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-FRONTEND_DIR = os.path.abspath(os.path.join(BASE_DIR, "../../frontend"))
+# Resilient path finding: local dev uses ../../frontend, Vercel uses ../frontend or relative to root
+potential_paths = [
+    os.path.abspath(os.path.join(BASE_DIR, "../../frontend")),
+    os.path.abspath(os.path.join(BASE_DIR, "../frontend")),
+    os.path.abspath("frontend")
+]
 
-# Ensure frontend directory exists
-if not os.path.exists(FRONTEND_DIR):
-    os.makedirs(FRONTEND_DIR, exist_ok=True)
-    logger.warning(f"Created frontend directory at {FRONTEND_DIR}")
+FRONTEND_DIR = None
+for p in potential_paths:
+    if os.path.exists(p) and os.path.isdir(p):
+        FRONTEND_DIR = p
+        break
 
-# Mount static files
-app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+if FRONTEND_DIR:
+    logger.info(f"Serving static files from {FRONTEND_DIR}")
+    app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+else:
+    logger.warning("Frontend directory not found. Static file serving disabled.")
 
 # Vercel handler export
 handler = app
