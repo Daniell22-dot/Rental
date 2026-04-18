@@ -176,14 +176,14 @@ async function handleLogin(event) {
                     switch (userData.role) {
                         case 'admin':
                         case 'property_manager':
-                            window.location.href = '/admin.html';
+                            window.location.href = 'admin.html';
                             break;
                         case 'landlord':
-                            window.location.href = '/landlord.html';
+                            window.location.href = 'landlord.html';
                             break;
                         case 'tenant':
                         default:
-                            window.location.href = '/index.html';
+                            window.location.href = 'index.html';
                             break;
                     }
                 } else {
@@ -295,6 +295,8 @@ function checkAuth() {
     const token = localStorage.getItem('rms-token');
     const authCheck = document.getElementById('auth-check');
     const loginScreen = document.getElementById('login-screen');
+
+    if (!authCheck && !loginScreen) return;
 
     if (token) {
         if (authCheck) authCheck.style.display = 'block';
