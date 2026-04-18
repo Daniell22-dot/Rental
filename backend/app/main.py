@@ -29,25 +29,38 @@ async def lifespan(app: FastAPI):
     """
     Handle startup and shutdown events
     """
+    is_vercel = os.environ.get("VERCEL")
+    
     # Startup
-    logger.info("Starting up Rental Management System...")
+    logger.info(f"Starting up Rental Management System (Vercel: {is_vercel})...")
     
-    # Create database tables
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        if not is_vercel:
+            # Create database tables - do NOT do this in request path on Vercel
+            logger.info("Non-Vercel environment detected. Initializing database tables...")
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            
+            # Start background scheduler
+            logger.info("Starting background scheduler...")
+            scheduler = start_scheduler()
+            
+            # Schedule DB backup (simulated every hour for demo)
+            from app.tasks.backup import run_backup
+            from app.tasks.reminders import send_rent_reminders
+            scheduler.add_job(run_backup, 'interval', hours=24)
+            scheduler.add_job(send_rent_reminders, 'interval', days=1)
+            
+            app.state.scheduler = scheduler
+        else:
+            logger.info("Vercel environment detected. Skipping automatic table creation and background scheduler.")
+            
+        logger.info("Application lifespan startup complete")
+    except Exception as e:
+        logger.error(f"Error during lifespan startup: {str(e)}", exc_info=True)
+        # In serverless, we might want to continue even if scheduler fails, 
+        # but DB failure might be critical.
     
-    # Start background scheduler
-    scheduler = start_scheduler()
-    
-    # Schedule DB backup (simulated every hour for demo)
-    from app.tasks.backup import run_backup
-    from app.tasks.reminders import send_rent_reminders
-    scheduler.add_job(run_backup, 'interval', hours=24)
-    scheduler.add_job(send_rent_reminders, 'interval', days=1)
-    
-    app.state.scheduler = scheduler
-    
-    logger.info("Application started successfully")
     yield
     
     # Shutdown
