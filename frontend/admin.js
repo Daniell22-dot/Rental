@@ -13,19 +13,11 @@ function switchRole(role) {
     if (document.getElementById('users').classList.contains('active')) fetchTenants();
 }
 
-const API_BASE_URL = 'http://localhost:8001';
-
-function ensureAdminPort() {
-    if (window.location.hostname === 'localhost' && window.location.port !== '5000') {
-        window.location.href = `http://localhost:5000${window.location.pathname}`;
-    }
-}
-
-ensureAdminPort();
+const ADMIN_API_BASE_URL = 'http://localhost:8000';
 
 async function fetchAdminStats() {
     try {
-        const token = localStorage.getItem('rms-token');
+        const token = localStorage.getItem('rms-admin-token');
         const response = await fetch(`${API_BASE_URL}/api/v1/admin/stats`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -57,7 +49,7 @@ function showAdminView(viewId, event) {
 
 async function fetchTenants() {
     try {
-        const token = localStorage.getItem('rms-token');
+        const token = localStorage.getItem('rms-admin-token');
         const response = await fetch(`${ADMIN_API_BASE_URL}/api/v1/tenants/`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -88,7 +80,7 @@ async function fetchAINarrative() {
     if (!aiPanel || !aiText) return;
 
     try {
-        const token = localStorage.getItem('rms-token');
+        const token = localStorage.getItem('rms-admin-token');
         const res = await fetch(`${ADMIN_API_BASE_URL}/api/v1/reports/ai-narrative`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -105,9 +97,9 @@ async function fetchAINarrative() {
 
 document.addEventListener('DOMContentLoaded', () => {
     // Check authentication
-    const token = localStorage.getItem('rms-token');
+    const token = localStorage.getItem('rms-admin-token');
     if (!token) {
-        window.location.href = 'index.html';
+        window.location.href = '/admin';
         return;
     }
     

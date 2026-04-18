@@ -115,7 +115,22 @@ if not os.path.exists(FRONTEND_DIR):
 # Mount static files
 app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
 
-# Serve HTML files
+@app.get("/admin")
+async def serve_admin_login():
+    """Serve admin login page"""
+    file_path = os.path.join(FRONTEND_DIR, "admin-login.html")
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    raise HTTPException(status_code=404, detail="Admin login page not found")
+
+@app.get("/landlord")
+async def serve_landlord_login():
+    """Serve landlord login page"""
+    file_path = os.path.join(FRONTEND_DIR, "landlord-login.html")
+    if os.path.exists(file_path):
+        return FileResponse(file_path)
+    raise HTTPException(status_code=404, detail="Landlord login page not found")
+
 @app.get("/{full_path:path}")
 async def serve_frontend(full_path: str):
     """Serve frontend files"""

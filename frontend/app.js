@@ -29,18 +29,7 @@ function updateThemeIcon(theme) {
 }
 
 // Configuration
-const API_BASE_URL = 'http://localhost:8001';
-const LANDLORD_UI_PORT = 3000;
-const ADMIN_UI_PORT = 5000;
-const ADMIN_API_BASE_URL = window.location.hostname === 'localhost' ? 'http://localhost:8001' : '';
-
-const LANDLORD_UI_BASE = window.location.hostname === 'localhost'
-    ? `http://localhost:${LANDLORD_UI_PORT}`
-    : `${window.location.protocol}//${window.location.hostname}`;
-
-const ADMIN_UI_BASE = window.location.hostname === 'localhost'
-    ? `http://localhost:${ADMIN_UI_PORT}`
-    : `${window.location.protocol}//${window.location.hostname}`;
+const API_BASE_URL = 'http://localhost:8000';
 
 // Utility function for safe API calls with error handling
 async function apiCall(url, options = {}) {
@@ -187,14 +176,14 @@ async function handleLogin(event) {
                     switch (userData.role) {
                         case 'admin':
                         case 'property_manager':
-                            window.location.href = `${ADMIN_UI_BASE}/admin.html`;
+                            window.location.href = '/admin.html';
                             break;
                         case 'landlord':
-                            window.location.href = `${LANDLORD_UI_BASE}/landlord.html`;
+                            window.location.href = '/landlord.html';
                             break;
                         case 'tenant':
                         default:
-                            window.location.href = 'index.html';
+                            window.location.href = '/index.html';
                             break;
                     }
                 } else {

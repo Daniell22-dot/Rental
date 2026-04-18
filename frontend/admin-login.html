@@ -7,44 +7,165 @@
     <title>RMS | Admin Login</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .step-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--border, #ccc);
+            transition: background 0.3s;
+        }
+        .step-dot.active { background: var(--accent, #4f46e5); }
+        .step-dot.done   { background: var(--success, #22c55e); }
+
+        .step-panel { display: none; }
+        .step-panel.active { display: block; }
+
+        .access-icon {
+            font-size: 3rem;
+            color: var(--accent, #4f46e5);
+            margin-bottom: 0.5rem;
+        }
+        .error-msg {
+            color: var(--danger, #ef4444);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 1rem;
+            font-size: 0.85rem;
+            color: var(--text-muted, #888);
+            cursor: pointer;
+        }
+        .back-link:hover { color: var(--accent, #4f46e5); }
+    </style>
 </head>
 
 <body oncontextmenu="return false;">
-    <div id="login-screen" class="auth-page">
+    <div id="admin-login-page" class="auth-page">
         <div class="auth-container">
             <div class="auth-header">
-                <i class="fas fa-shield-alt"></i>
-                <h2>RMS Admin Login</h2>
-                <p>Administrator Access</p>
+                <i class="fas fa-shield-alt access-icon"></i>
+                <h2>Admin Portal</h2>
+                <p>Restricted Access — Authorized Personnel Only</p>
             </div>
-            <form onsubmit="handleLogin(event)">
-                <div class="form-group">
-                    <i class="fas fa-envelope"></i>
-                    <input type="email" id="login-email" placeholder="Admin Email" required autocomplete="email">
+
+            <!-- Step Indicator -->
+            <div class="step-indicator">
+                <div class="step-dot active" id="dot-1"></div>
+                <div class="step-dot" id="dot-2"></div>
+            </div>
+
+            <!-- Step 1: Secret Access Key -->
+            <div class="step-panel active" id="step-1">
+                <div class="form-group" style="margin-bottom:0.5rem;">
+                    <i class="fas fa-key"></i>
+                    <input type="password" id="admin-access-key" placeholder="Enter Access Key" autocomplete="off">
                 </div>
-                <div class="form-group">
+                <p class="error-msg" id="key-error">❌ Invalid access key. Please try again.</p>
+                <button class="btn-primary btn-block" onclick="verifyAdminKey()" style="margin-top:1rem;">
+                    <i class="fas fa-unlock-alt"></i> Verify Key
+                </button>
+                <p style="font-size:0.8rem;color:var(--text-muted);margin-top:1rem;">
+                    <i class="fas fa-info-circle"></i> Enter the system access key provided by your IT administrator.
+                </p>
+            </div>
+
+            <!-- Step 2: Password -->
+            <div class="step-panel" id="step-2">
+                <div class="form-group" style="margin-bottom:0.5rem;">
                     <i class="fas fa-lock"></i>
-                    <input type="password" id="login-pass" placeholder="Password" required autocomplete="current-password">
+                    <input type="password" id="admin-password" placeholder="Enter Admin Password" autocomplete="current-password">
                 </div>
-                <div class="captcha-container">
-                    <span class="captcha-question" id="captcha-q">Loading...</span>
-                    <input type="text" id="captcha-ans" class="captcha-input" placeholder="?" required>
-                </div>
-                <button type="submit" class="btn-primary btn-block">Sign In as Admin</button>
-            </form>
-            <div class="auth-footer">
-                <a href="../index.html">Tenant Portal</a>
-                <span>|</span>
-                <a href="../landlord-login.html">Landlord Login</a>
+                <p class="error-msg" id="pass-error">❌ Incorrect password. Please try again.</p>
+                <button class="btn-primary btn-block" onclick="verifyAdminPassword()" style="margin-top:1rem;">
+                    <i class="fas fa-sign-in-alt"></i> Sign In as Admin
+                </button>
+                <span class="back-link" onclick="goBackStep()">
+                    <i class="fas fa-arrow-left"></i> Back
+                </span>
             </div>
-            <div class="auth-links">
-                <a href="policies.html">Privacy Policy</a>
-                <a href="policies.html">Terms of Service</a>
+
+            <div class="auth-footer" style="margin-top:1.5rem;">
+                <a href="/"><i class="fas fa-users"></i> Tenant Portal</a>
+                <span>|</span>
+                <a href="/landlord"><i class="fas fa-home"></i> Landlord Portal</a>
             </div>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <script>
+        const ADMIN_ACCESS_KEY = '2026';
+        const ADMIN_PASSWORD   = 'admin@2026';
+
+        function verifyAdminKey() {
+            const key = document.getElementById('admin-access-key').value.trim();
+            const errEl = document.getElementById('key-error');
+
+            if (key === ADMIN_ACCESS_KEY) {
+                errEl.style.display = 'none';
+                // Animate step transition
+                document.getElementById('step-1').classList.remove('active');
+                document.getElementById('step-2').classList.add('active');
+                document.getElementById('dot-1').classList.replace('active', 'done');
+                document.getElementById('dot-2').classList.add('active');
+                document.getElementById('admin-password').focus();
+            } else {
+                errEl.style.display = 'block';
+                document.getElementById('admin-access-key').value = '';
+                document.getElementById('admin-access-key').focus();
+            }
+        }
+
+        function verifyAdminPassword() {
+            const pass  = document.getElementById('admin-password').value;
+            const errEl = document.getElementById('pass-error');
+            const btn   = document.querySelector('#step-2 .btn-primary');
+
+            if (pass === ADMIN_PASSWORD) {
+                errEl.style.display = 'none';
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+                // Store a dummy token so admin.html recognises the session
+                localStorage.setItem('rms-admin-token', 'admin-local-2026');
+                localStorage.setItem('rms-admin-role', 'admin');
+                setTimeout(() => { window.location.href = '/admin.html'; }, 600);
+            } else {
+                errEl.style.display = 'block';
+                document.getElementById('admin-password').value = '';
+                document.getElementById('admin-password').focus();
+            }
+        }
+
+        function goBackStep() {
+            document.getElementById('step-2').classList.remove('active');
+            document.getElementById('step-1').classList.add('active');
+            document.getElementById('dot-2').classList.remove('active');
+            document.getElementById('dot-1').classList.replace('done', 'active');
+            document.getElementById('pass-error').style.display = 'none';
+            document.getElementById('admin-password').value = '';
+            document.getElementById('admin-access-key').focus();
+        }
+
+        // Allow Enter key on both inputs
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('admin-access-key').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') verifyAdminKey();
+            });
+            document.getElementById('admin-password').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') verifyAdminPassword();
+            });
+        });
+    </script>
 </body>
 
 </html>

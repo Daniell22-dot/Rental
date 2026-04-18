@@ -57,13 +57,12 @@ class Settings(BaseSettings):
         errors = []
         
         # SECRET_KEY is required for JWT
-        if not self.SECRET_KEY or self.SECRET_KEY == os.getenv("SECRET_KEY"):
+        if not self.SECRET_KEY or self.SECRET_KEY in ("your secret key for encryption", ""):
             errors.append("SECRET_KEY must be set in .env (required for JWT)")
         
         # DATABASE_URL validation
         if not self.DATABASE_URL:
-            # Construct from parts if not provided
-            self.DATABASE_URL = f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:5432/{self.POSTGRES_DB}"
+            errors.append("DATABASE_URL must be set in .env")
         
         if errors:
             logger.error("Configuration validation failed:")

@@ -148,7 +148,7 @@ async def register(response: Response, user_in: UserCreate, db: AsyncSession = D
 
 @router.post("/login", response_model=Token)
 async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
-    if not check_rate_limit(form_data.username, login_attempts[form_data.username], 3):
+    if not check_rate_limit(form_data.username, login_attempts[form_data.username], 20):
         raise HTTPException(status_code=429, detail="Too many login attempts. Account temporarily locked.")
 
     user = await authenticate_user(db, form_data.username, form_data.password)

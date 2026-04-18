@@ -1,25 +1,15 @@
 // landlord portal
-// This JavaScript file manages the landlord dashboard, including data fetching, view management, and user interactions for landlords. It handles displaying metrics, properties, tenants, payments, maintenance requests, and reports specific to landlords.
-// The code is structured to initialize the landlord page, load necessary data for the dashboard, and provide functions to switch between different views and perform actions like adding properties or updating maintenance request statuses.
-// Note: This code assumes that the backend API endpoints are properly set up to handle the requests made from this frontend script.
-// Global variable to store the revenue chart instance for later updates
+// This JavaScript file manages the landlord dashboard, including data fetching, view management, and user interactions for landlords.
 let revenueChart = null;
 
-function ensureLandlordPort() {
-    if (window.location.hostname === 'localhost' && window.location.port !== '3000') {
-        window.location.href = `http://localhost:3000${window.location.pathname}`;
-    }
-}
-
-ensureLandlordPort();
-
+    
 async function initLandlordApp() {
-    const token = localStorage.getItem('rms-token');
+    const token = localStorage.getItem('rms-landlord-token');
     if (!token) {
-        window.location.href = 'index.html';
+        window.location.href = '/landlord';
         return;
     }
-    
+
     await loadDashboardData();
     await loadProperties();
     await loadTenants();
@@ -28,7 +18,7 @@ async function initLandlordApp() {
 }
 
 async function loadDashboardData() {
-    const token = localStorage.getItem('rms-token');
+    const token = localStorage.getItem('rms-landlord-token');
     
     try {
         const metricsRes = await fetch('/api/v1/admin/metrics', {
@@ -99,7 +89,7 @@ function initRevenueChart() {
 }
 
 async function loadProperties() {
-    const token = localStorage.getItem('rms-token');
+    const token = localStorage.getItem('rms-landlord-token');
     const container = document.getElementById('properties-list');
     
     try {
@@ -130,7 +120,7 @@ async function loadProperties() {
 }
 
 async function loadTenants() {
-    const token = localStorage.getItem('rms-token');
+    const token = localStorage.getItem('rms-landlord-token');
     const tbody = document.getElementById('tenants-table-body');
     
     try {
@@ -164,7 +154,7 @@ async function loadTenants() {
 }
 
 async function loadPayments() {
-    const token = localStorage.getItem('rms-token');
+    const token = localStorage.getItem('rms-landlord-token');
     const tbody = document.getElementById('all-payments-table');
     
     try {
@@ -194,7 +184,7 @@ async function loadPayments() {
 }
 
 async function loadMaintenanceRequests() {
-    const token = localStorage.getItem('rms-token');
+    const token = localStorage.getItem('rms-landlord-token');
     const container = document.getElementById('maintenance-requests-list');
     
     try {
@@ -277,7 +267,7 @@ function sendMessageToTenant(id) {
 }
 
 async function updateRequestStatus(requestId, status) {
-    const token = localStorage.getItem('rms-token');
+    const token = localStorage.getItem('rms-landlord-token');
     try {
         await fetch(`/api/v1/maintenance/${requestId}/status`, {
             method: 'PUT',
@@ -301,8 +291,9 @@ function generateReport() {
 }
 
 function logout() {
-    localStorage.removeItem('rms-token');
-    window.location.href = 'index.html';
+    localStorage.removeItem('rms-landlord-token');
+    localStorage.removeItem('rms-landlord-role');
+    window.location.href = '/landlord';
 }
 
 function toggleTheme() {
