@@ -325,6 +325,7 @@ async function initApp() {
         });
         if (userRes.ok) {
             currentUser = await userRes.json();
+            document.querySelectorAll('.user-first-name').forEach(el => el.textContent = currentUser.first_name);
             document.getElementById('user-display').innerHTML = `<i class="fas fa-user"></i> ${currentUser.first_name} ${currentUser.last_name}`;
             document.getElementById('welcome-message').textContent = `Welcome back, ${currentUser.first_name}!`;
             document.getElementById('profile-name').textContent = `${currentUser.first_name} ${currentUser.last_name}`;
@@ -339,6 +340,15 @@ async function initApp() {
             month: 'long', 
             day: 'numeric' 
         });
+
+        // Check Room Assignment status
+        const status = await apiCall('/api/v1/tenants/my-status');
+        if (!status.has_unit) {
+            console.log("No room assigned. Redirecting to room assignment view.");
+            showView('room-assignment-view');
+            loadAvailableUnits();
+            return; // Stop further loading until room is picked
+        }
         
         // Load all data
         await Promise.all([
@@ -390,7 +400,7 @@ async function loadDashboardData() {
 
 // View Management
 function showView(viewId) {
-    const views = ['home', 'property', 'payments', 'maintenance', 'notifications', 'documents', 'feedback', 'settings'];
+    const views = ['home', 'property', 'payments', 'maintenance', 'notifications', 'documents', 'feedback', 'settings', 'room-assignment-view'];
     
     views.forEach(id => {
         const view = document.getElementById(id);
@@ -799,6 +809,65 @@ function exportMyData() {
 function requestAccountDeletion() {
     if (confirm('Are you sure you want to request account deletion? This action cannot be undone.')) {
         alert('Account deletion request submitted. Admin will contact you.');
+    }
+}
+
+// Room Assignment Logic
+async function loadAvailableUnits() {
+    const select = document.getElementById('available-units-select');
+    if (!select) return;
+    
+    try {
+        const units = await apiCall('/api/v1/tenants/available-units');
+        if (units.length === 0) {
+            select.innerHTML = '<option value="">No vacant rooms available. Please contact admin.</option>';
+            return;
+        }
+        
+        select.innerHTML = '<option value="">-- Choose your unit --</option>' + units.map(u => `
+            <option value="${u.id}">${u.property_name} - Room ${u.unit_number} (Ksh ${u.monthly_rent.toLocaleString()}/mo)</option>
+        `).join('');
+    } catch (err) {
+        console.error('Error loading available units:', err);
+        select.innerHTML = '<option value="">Error loading units. Please refresh.</option>';
+    }
+}
+
+async function handleRoomAssignment(event) {
+    event.preventDefault();
+    const unitId = document.getElementById('available-units-select').value;
+    const moveIn = document.getElementById('move-in-date').value;
+    const notes = document.getElementById('assignment-notes').value;
+    
+    if (!unitId) {
+        alert('Please select a unit.');
+        return;
+    }
+    
+    const submitBtn = event.target.querySelector('button');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Assigning Room...';
+    
+    try {
+        await apiCall('/api/v1/tenants/assign-room', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                unit_id: parseInt(unitId),
+                move_in_date: moveIn,
+                notes: notes
+            })
+        });
+        
+        alert('Room assignment successful! Welcome to your new home.');
+        // Refresh app to show dashboard
+        initApp();
+    } catch (err) {
+        console.error('Room assignment error:', err);
+        alert('Failed to assign room: ' + err.message);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Confirm Room Assignment';
     }
 }
 

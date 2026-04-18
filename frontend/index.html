@@ -68,6 +68,37 @@
                 </header>
 
                 <div class="content-body">
+                    <!-- Room Assignment View (First time login) -->
+                    <section id="room-assignment-view" class="content-view">
+                        <div class="welcome-section">
+                            <h2>Welcome, <span class="user-first-name">Tenant</span>!</h2>
+                            <p>To get started, please select your assigned property and room.</p>
+                        </div>
+                        
+                        <div class="card" style="max-width: 600px; margin: 0 auto;">
+                            <h3>Room Assignment</h3>
+                            <p style="margin-bottom: 1.5rem; color: var(--text-muted);">Select from the available vacant units below.</p>
+                            
+                            <form id="room-assignment-form" onsubmit="handleRoomAssignment(event)">
+                                <div class="form-group">
+                                    <label>Available Units</label>
+                                    <select id="available-units-select" required>
+                                        <option value="">Loading available units...</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Move-in Date (Optional)</label>
+                                    <input type="date" id="move-in-date">
+                                </div>
+                                <div class="form-group">
+                                    <label>Additional Notes</label>
+                                    <textarea id="assignment-notes" placeholder="Any specific notes for the landlord?"></textarea>
+                                </div>
+                                <button type="submit" class="btn-primary btn-block">Confirm Room Assignment</button>
+                            </form>
+                        </div>
+                    </section>
+
                     <!-- Dashboard View -->
                     <section id="home" class="content-view active">
                         <div class="welcome-section">
