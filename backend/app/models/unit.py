@@ -16,4 +16,4 @@ class Unit(BaseModel):
     # Relationships
     property = relationship("Property", back_populates="units")
     tenants = relationship("Tenant", back_populates="unit")
-    maintenance_requests = relationship("MaintenanceRequest", back_populates="unit")
+    leases = relationship("Lease", back_populates="unit")
