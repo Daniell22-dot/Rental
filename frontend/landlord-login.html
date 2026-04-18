@@ -96,9 +96,9 @@
             </div>
 
             <div class="auth-footer" style="margin-top:1.5rem;">
-                <a href="/"><i class="fas fa-users"></i> Tenant Portal</a>
+                <a href="index.html"><i class="fas fa-users"></i> Tenant Portal</a>
                 <span>|</span>
-                <a href="/admin"><i class="fas fa-shield-alt"></i> Admin Portal</a>
+                <a href="admin-login.html"><i class="fas fa-shield-alt"></i> Admin Portal</a>
             </div>
         </div>
     </div>
@@ -136,7 +136,7 @@
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
                 localStorage.setItem('rms-landlord-token', 'landlord-local-2026');
                 localStorage.setItem('rms-landlord-role', 'landlord');
-                setTimeout(() => { window.location.href = '/landlord.html'; }, 600);
+                setTimeout(() => { window.location.href = 'landlord.html'; }, 600);
             } else {
                 errEl.style.display = 'block';
                 document.getElementById('landlord-password').value = '';

@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Check authentication
     const token = localStorage.getItem('rms-admin-token');
     if (!token) {
-        window.location.href = '/admin';
+        window.location.href = 'admin-login.html';
         return;
     }
     

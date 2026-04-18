@@ -96,9 +96,9 @@
             </div>
 
             <div class="auth-footer" style="margin-top:1.5rem;">
-                <a href="/"><i class="fas fa-users"></i> Tenant Portal</a>
+                <a href="index.html"><i class="fas fa-users"></i> Tenant Portal</a>
                 <span>|</span>
-                <a href="/landlord"><i class="fas fa-home"></i> Landlord Portal</a>
+                <a href="landlord-login.html"><i class="fas fa-home"></i> Landlord Portal</a>
             </div>
         </div>
     </div>
@@ -138,7 +138,7 @@
                 // Store a dummy token so admin.html recognises the session
                 localStorage.setItem('rms-admin-token', 'admin-local-2026');
                 localStorage.setItem('rms-admin-role', 'admin');
-                setTimeout(() => { window.location.href = '/admin.html'; }, 600);
+                setTimeout(() => { window.location.href = 'admin.html'; }, 600);
             } else {
                 errEl.style.display = 'block';
                 document.getElementById('admin-password').value = '';

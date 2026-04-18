@@ -6,7 +6,7 @@ let revenueChart = null;
 async function initLandlordApp() {
     const token = localStorage.getItem('rms-landlord-token');
     if (!token) {
-        window.location.href = '/landlord';
+        window.location.href = 'landlord-login.html';
         return;
     }
 
@@ -293,7 +293,7 @@ function generateReport() {
 function logout() {
     localStorage.removeItem('rms-landlord-token');
     localStorage.removeItem('rms-landlord-role');
-    window.location.href = '/landlord';
+    window.location.href = 'landlord-login.html';
 }
 
 function toggleTheme() {
