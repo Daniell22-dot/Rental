@@ -89,8 +89,9 @@ app.include_router(monitoring.router, prefix=f"{settings.API_V1_STR}/monitoring"
 app.include_router(arrears.router, prefix=f"{settings.API_V1_STR}/arrears", tags=["Arrears"])
 
 # Admin Router (New)
-from app.api.endpoints import admin
+from app.api.endpoints import admin, users
 app.include_router(admin.router, prefix=f"{settings.API_V1_STR}/admin", tags=["Admin"])
+app.include_router(users.router, prefix=f"{settings.API_V1_STR}/users", tags=["Users"])
 
 @app.get("/health")
 async def health_check():
@@ -100,21 +101,7 @@ async def health_check():
     }
 
 # Redirect admin/landlord UI requests on port 8001 to separate ports
-@app.get("/admin-login.html")
-async def admin_login_redirect():
-    return RedirectResponse(url="http://localhost:5000/admin-login.html")
 
-@app.get("/admin.html")
-async def admin_redirect():
-    return RedirectResponse(url="http://localhost:5000/admin.html")
-
-@app.get("/landlord-login.html")
-async def landlord_login_redirect():
-    return RedirectResponse(url="http://localhost:3000/landlord-login.html")
-
-@app.get("/landlord.html")
-async def landlord_redirect():
-    return RedirectResponse(url="http://localhost:3000/landlord.html")
 
 # Mount static files
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

@@ -29,7 +29,7 @@ function updateThemeIcon(theme) {
 }
 
 // Configuration
-const API_BASE_URL = window.location.hostname === 'localhost' ? 'http://localhost:8001' : '';
+const API_BASE_URL = 'http://localhost:8001';
 const LANDLORD_UI_PORT = 3000;
 const ADMIN_UI_PORT = 5000;
 const ADMIN_API_BASE_URL = window.location.hostname === 'localhost' ? 'http://localhost:8001' : '';

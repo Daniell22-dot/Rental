@@ -141,11 +141,7 @@ async def register(response: Response, user_in: UserCreate, db: AsyncSession = D
     )
     
     # Set HttpOnly Cookie
-    response.set_cookie(
-        key="access_token", value=f"Bearer {access_token}", 
-        httponly=True, max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        samesite="lax", secure=False # Set secure=True in production
-    )
+
     
     logger.info(f"New user registered: {new_user.email}")
     return {"access_token": access_token, "token_type": "bearer"}
