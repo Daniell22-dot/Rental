@@ -13,12 +13,12 @@ function switchRole(role) {
     if (document.getElementById('users').classList.contains('active')) fetchTenants();
 }
 
-const ADMIN_API_BASE_URL = 'http://localhost:8000';
+const ADMIN_API_BASE_URL = '';
 
 async function fetchAdminStats() {
     try {
         const token = localStorage.getItem('rms-admin-token');
-        const response = await fetch(`${API_BASE_URL}/api/v1/admin/stats`, {
+        const response = await fetch(`${ADMIN_API_BASE_URL}/api/v1/admin/stats`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();

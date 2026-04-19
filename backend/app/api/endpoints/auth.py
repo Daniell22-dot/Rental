@@ -209,3 +209,33 @@ async def reset_password(email: EmailStr, db: AsyncSession = Depends(get_db)):
     
     # In a real app, generate a token, save it, and send an email
     return {"message": "If an account exists for this email, a reset link will be sent."}
+
+@router.get("/setup-db")
+async def setup_db(db: AsyncSession = Depends(get_db)):
+    """
+    Initialize database tables. 
+    In production, this should be protected or removed.
+    """
+    try:
+        from app.core.database import engine, Base
+        # Import all models to ensure they are registered
+        from app.models.users import User
+        from app.models.property import Property
+        from app.models.unit import Unit
+        from app.models.tenant import Tenant
+        from app.models.lease import Lease
+        from app.models.payment import Payment
+        from app.models.maintenance import MaintenanceRequest
+        from app.models.notification import Notification
+        from app.models.interaction import Feedback, Review
+        from app.models.document import Document
+        from app.models.monitoring import SystemMetric, LogEntry
+        from app.models.cache import CacheItem
+        
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        
+        return {"status": "success", "message": "Database tables created/verified successfully"}
+    except Exception as e:
+        logger.error(f"Setup DB error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database initialization failed: {str(e)}")

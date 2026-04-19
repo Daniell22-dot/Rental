@@ -29,7 +29,7 @@ function updateThemeIcon(theme) {
 }
 
 // Configuration
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = '';
 
 // Utility function for safe API calls with error handling
 async function apiCall(url, options = {}) {
