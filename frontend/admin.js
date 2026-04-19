@@ -13,7 +13,7 @@ function switchRole(role) {
     if (document.getElementById('users').classList.contains('active')) fetchTenants();
 }
 
-const ADMIN_API_BASE_URL = '';
+const ADMIN_API_BASE_URL = window.location.origin;
 
 async function fetchAdminStats() {
     try {

@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Rental Management System"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
-    BACKEND_CORS_ORIGINS: list[str] = ["*"]
+    BACKEND_CORS_ORIGINS: List[str] = ["*"]
     
     # Database
     DATABASE_URL: Optional[str] = os.getenv("DATABASE_URL")

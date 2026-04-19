@@ -29,7 +29,7 @@ function updateThemeIcon(theme) {
 }
 
 // Configuration
-const API_BASE_URL = '';
+const API_BASE_URL = window.location.origin;
 
 // Utility function for safe API calls with error handling
 async function apiCall(url, options = {}) {
