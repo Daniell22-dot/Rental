@@ -3,7 +3,7 @@ import os
 
 from pydantic_settings import BaseSettings
 from pydantic import ValidationError
-from typing import Optional
+from typing import Optional, List
 import logging
 import sys
 
@@ -13,7 +13,13 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Rental Management System"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
-    BACKEND_CORS_ORIGINS: List[str] = ["*"]
+    BACKEND_CORS_ORIGINS: List[str] = [
+        "https://rental-sigma-five.vercel.app",
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "*" # Fallback for now to ensure connectivity
+    ]
     
     # Database
     DATABASE_URL: Optional[str] = os.getenv("DATABASE_URL")
@@ -22,9 +28,18 @@ class Settings(BaseSettings):
     def ASYNC_DATABASE_URL(self) -> Optional[str]:
         if not self.DATABASE_URL:
             return None
-        if self.DATABASE_URL.startswith("postgresql://"):
-            return self.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://", 1)
-        return self.DATABASE_URL
+        
+        # Ensure we use the asyncpg driver
+        url = self.DATABASE_URL
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgresql://"):
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        
+        # Clean up any potential double protocols or whitespace
+        url = url.strip()
+            
+        return url
 
     DB_ECHO: bool = False
     DB_POOL_SIZE: int = 20

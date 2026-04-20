@@ -8,21 +8,31 @@ from typing import AsyncGenerator
 
 logger = logging.getLogger(__name__)
 
-# Create async engine with optimized connection pooling
+# Create async engine with optimized connection pooling for serverless
 if not settings.ASYNC_DATABASE_URL:
     raise ValueError("DATABASE_URL must be set in Environment Variables")
+
+# On Vercel (Serverless), we should use NullPool to prevent connection leaks/errors
+# and ensure each request gets a fresh connection that is closed immediately.
+import os
+pool_class = NullPool if os.getenv("VERCEL") else QueuePool
 
 engine = create_async_engine(
     settings.ASYNC_DATABASE_URL,
     echo=settings.DB_ECHO,
     pool_pre_ping=True,
+    poolclass=pool_class,
+    # These settings are only relevant for QueuePool (ignored by NullPool)
     pool_size=settings.DB_POOL_SIZE,
     max_overflow=settings.DB_MAX_OVERFLOW,
-    pool_recycle=3600,  # Recycle connections after 1 hour to prevent stale connections
-    echo_pool=False,  # Set to True for debugging connection pool issues
+    pool_recycle=3600,
     connect_args={
-        "timeout": 10,  # 10 second timeout for connection
-        "command_timeout": 10,  # 10 second timeout for commands
+        "command_timeout": 30,  # Increased timeout
+        "server_settings": {
+            "application_name": "RMS_Vercel"
+        },
+        # Fix for PGBouncer in Transaction Mode (Supabase Port 6543)
+        "prepare_threshold": 0
     }
 )
 
