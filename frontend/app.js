@@ -192,17 +192,22 @@ async function handleLogin(event) {
                 }
             } catch (err) {
                 console.error('Error fetching user info after login:', err);
-                // Fallback to tenant portal
                 window.location.href = 'index.html';
             }
         } else {
-            const error = await response.json();
-            alert('Login failed: ' + (error.detail || 'Invalid credentials'));
+            try {
+                const errorData = await response.json();
+                alert('Login failed: ' + (errorData.detail || 'Invalid credentials'));
+            } catch (e) {
+                alert('Login failed: ' + response.status);
+            }
             generateCaptcha();
         }
+    } catch (err) {
         console.error('Login error:', err);
         const errorMsg = `Login Network Error:\nMessage: ${err.message}\nStack: ${err.stack ? err.stack.substring(0, 100) : 'N/A'}`;
         alert(errorMsg);
+    } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
         generateCaptcha();
