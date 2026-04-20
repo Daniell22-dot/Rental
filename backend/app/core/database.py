@@ -19,18 +19,17 @@ import os
 pool_class = NullPool if os.getenv("VERCEL") else QueuePool
 
 # Configure engine arguments dynamically based on pool class
+# NOTE: connect_args are asyncpg-specific. 'prepare_threshold' is psycopg3-only
+# and must NOT be used here. Use 'statement_cache_size=0' for asyncpg.
 engine_kwargs = {
     "echo": settings.DB_ECHO,
-    "pool_pre_ping": True,
     "poolclass": pool_class,
     "connect_args": {
         "command_timeout": 30,
+        "statement_cache_size": 0,  # Disables prepared statements - required for PgBouncer
         "server_settings": {
             "application_name": "RMS_Vercel"
         },
-        # Fix for PGBouncer in Transaction Mode
-        "prepare_threshold": 0,
-        "statement_cache_size": 0  # Disable statement caching as required by PGBouncer
     }
 }
 

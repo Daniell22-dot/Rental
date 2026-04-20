@@ -127,17 +127,6 @@ async function handleLogin(event) {
     const pass = document.getElementById('login-pass').value;
     const userCaptcha = document.getElementById('captcha-ans').value;
 
-    // Fallback: Generate CAPTCHA if it's still showing "Loading..."
-    const captchaElement = document.getElementById('captcha-q');
-    if (captchaElement && captchaElement.textContent === 'Loading...') {
-        generateCaptcha();
-    }
-
-    if (parseInt(userCaptcha) !== captchaAnswer) {
-        alert('Incorrect verification code. Please try again.');
-        generateCaptcha();
-        return;
-    }
 
     const submitBtn = event.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.textContent;
@@ -224,18 +213,6 @@ async function handleRegistration(event) {
     const userCaptcha = document.getElementById('reg-captcha-ans').value;
     const termsAccepted = document.getElementById('reg-tos').checked;
 
-    // Fallback: Generate CAPTCHA if it's still showing "Loading captcha..."
-    const captchaElement = document.getElementById('reg-captcha-q');
-    if (captchaElement && captchaElement.textContent === 'Loading captcha...') {
-        generateRegCaptcha();
-    }
-
-    // Validate CAPTCHA
-    if (parseInt(userCaptcha) !== regCaptchaAnswer) {
-        alert('Incorrect verification code. Please try again.');
-        generateRegCaptcha();
-        return;
-    }
 
     // Validate terms acceptance
     if (!termsAccepted) {
