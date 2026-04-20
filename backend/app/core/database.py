@@ -17,23 +17,33 @@ if not settings.ASYNC_DATABASE_URL:
 import os
 pool_class = NullPool if os.getenv("VERCEL") else QueuePool
 
-engine = create_async_engine(
-    settings.ASYNC_DATABASE_URL,
-    echo=settings.DB_ECHO,
-    pool_pre_ping=True,
-    poolclass=pool_class,
-    # These settings are only relevant for QueuePool (ignored by NullPool)
-    pool_size=settings.DB_POOL_SIZE,
-    max_overflow=settings.DB_MAX_OVERFLOW,
-    pool_recycle=3600,
-    connect_args={
-        "command_timeout": 30,  # Increased timeout
+# Configure engine arguments dynamically based on pool class
+engine_kwargs = {
+    "echo": settings.DB_ECHO,
+    "pool_pre_ping": True,
+    "poolclass": pool_class,
+    "connect_args": {
+        "command_timeout": 30,
         "server_settings": {
             "application_name": "RMS_Vercel"
         },
-        # Fix for PGBouncer in Transaction Mode (Supabase Port 6543)
-        "prepare_threshold": 0
+        # Fix for PGBouncer in Transaction Mode
+        "prepare_threshold": 0,
+        "statement_cache_size": 0  # Disable statement caching as required by PGBouncer
     }
+}
+
+# Only add pool sizing if using a pooling class that supports it (QueuePool)
+if pool_class == QueuePool:
+    engine_kwargs.update({
+        "pool_size": settings.DB_POOL_SIZE,
+        "max_overflow": settings.DB_MAX_OVERFLOW,
+        "pool_recycle": 3600,
+    })
+
+engine = create_async_engine(
+    settings.ASYNC_DATABASE_URL,
+    **engine_kwargs
 )
 
 # Create async session factory

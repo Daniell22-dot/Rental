@@ -84,13 +84,8 @@ async def get_admin_dashboard(
         "server_time": datetime.utcnow().isoformat()
     }
 
-@router.get("/stats", response_model=SystemStatsResponse, status_code=status.HTTP_200_OK)
-async def get_system_stats(
-    current_user: User = Depends(get_current_owner),
-    db: AsyncSession = Depends(get_db)
-):
-    """Get system financial statistics (Kenya/KRA specific)"""
-    
+async def _get_system_stats_internal(db: AsyncSession) -> SystemStatsResponse:
+    """Internal helper to calculate system statistics"""
     # Calculate total revenue from completed payments
     result = await db.execute(
         select(func.sum(Payment.amount)).where(
@@ -128,6 +123,14 @@ async def get_system_stats(
         kra_details="25% Corporate Tax + County Land Rates (Nairobi)",
         timestamp=datetime.utcnow()
     )
+
+@router.get("/stats", response_model=SystemStatsResponse, status_code=status.HTTP_200_OK)
+async def get_system_stats(
+    current_user: User = Depends(get_current_owner),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get system financial statistics (Kenya/KRA specific)"""
+    return await _get_system_stats_internal(db)
 
 @router.get("/metrics", response_model=DashboardMetrics, status_code=status.HTTP_200_OK)
 async def get_dashboard_metrics(

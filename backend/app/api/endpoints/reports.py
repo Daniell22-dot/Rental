@@ -2,14 +2,14 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.services.ai_service import ai_service
-from app.api.endpoints.admin import get_system_stats
+from app.api.endpoints.admin import get_system_stats, _get_system_stats_internal
 
 router = APIRouter()
 
 @router.get("/ai-narrative")
 async def get_ai_financial_narrative(db: AsyncSession = Depends(get_db)):
-    # Get current stats
-    stats = await get_system_stats()
+    # Get current stats using the internal helper (bypassing Depends issue)
+    stats = await _get_system_stats_internal(db)
     
     # Narrative Prompt
     prompt = f"""
