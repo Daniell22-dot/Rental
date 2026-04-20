@@ -12,34 +12,48 @@
 <body oncontextmenu="return false;">
     <div class="auth-page">
         <div class="auth-container" style="max-width: 500px;">
-            <h2>Create Account</h2>
-            <form id="register-form" onsubmit="handleRegistration(event)">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                    <input type="text" id="reg-first" placeholder="First Name" required>
-                    <input type="text" id="reg-last" placeholder="Last Name" required>
+            <div id="form-panel">
+                <h2>Create Account</h2>
+                <div class="auth-header">
+                    <p>Enter your details below to join the community</p>
                 </div>
-                <input type="email" id="reg-email" placeholder="Email Address" required>
-                <input type="text" id="reg-phone" placeholder="Phone Number (e.g., 0712345678)" required>
-                <input type="password" id="reg-pass" placeholder="Password" required oninput="checkPasswordStrength()">
-                <div id="password-strength" style="margin: 0.25rem 0; font-size: 0.8rem; color: var(--text-muted);"></div>
-                <small style="color: var(--text-muted); margin: 0.5rem 0; display: block;">Password must have: 8+ characters, uppercase, lowercase, number, special character</small>
+                <form id="register-form" onsubmit="handleRegistration(event)">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <input type="text" id="reg-first" placeholder="First Name" required>
+                        <input type="text" id="reg-last" placeholder="Last Name" required>
+                    </div>
+                    <input type="email" id="reg-email" placeholder="Email Address" required>
+                    <input type="text" id="reg-phone" placeholder="Phone Number (e.g., 0712345678)" required>
+                    <input type="password" id="reg-pass" placeholder="Password" required oninput="checkPasswordStrength()">
+                    <div id="password-strength" style="margin: 0.25rem 0; font-size: 0.8rem; color: var(--text-muted);"></div>
 
-                <div class="captcha-container">
-                    <span class="captcha-question" id="reg-captcha-q">Loading captcha...</span>
-                    <input type="text" id="reg-captcha-ans" class="captcha-input" placeholder="?" required>
+                    <div class="captcha-container">
+                        <span class="captcha-question" id="reg-captcha-q">Loading captcha...</span>
+                        <input type="text" id="reg-captcha-ans" class="captcha-input" placeholder="?" required>
+                    </div>
+
+                    <div style="margin: 0.5rem 0; text-align: left; display: flex; align-items: flex-start; gap: 0.5rem;">
+                        <input type="checkbox" id="reg-tos" required style="margin-top: 0.3rem;">
+                        <label for="reg-tos" style="font-size: 0.9rem; color: var(--text-muted);">
+                            I agree to the <a href="policies.html" target="_blank">Terms & Conditions</a>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn-primary btn-block">Create Account</button>
+                    <p style="margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-muted);">Already have an account? <a href="index.html" style="color: var(--accent); font-weight: 600; text-decoration: none;">Sign In</a></p>
+                </form>
+            </div>
+
+            <div id="success-panel" class="success-panel">
+                <div class="success-icon">
+                    <i class="fas fa-check"></i>
                 </div>
-
-                <div style="margin: 0.5rem 0; text-align: left; display: flex; align-items: flex-start; gap: 0.5rem;">
-                    <input type="checkbox" id="reg-tos" required style="margin-top: 0.3rem;">
-                    <label for="reg-tos" style="font-size: 0.9rem; color: var(--text-muted);">
-                        I agree to the <a href="policies.html" target="_blank">Terms of Service</a> and have read the <a
-                            href="policies.html" target="_blank">Privacy Policy</a>.
-                    </label>
-                </div>
-
-                <button type="submit">Create Account</button>
-            </form>
-            <p style="margin-top: 1.5rem;">Already have an account? <a href="index.html">Sign In</a></p>
+                <h3>Registration Successful!</h3>
+                <p>Welcome to the Rental Management System. Your account has been created successfully. You can now proceed to login.</p>
+                <a href="index.html" class="btn-primary btn-block" style="text-decoration: none; display: block; padding-top: 1rem;">
+                    Go to Login Screen
+                </a>
+            </div>
         </div>
     </div>
     <script src="app.js"></script>

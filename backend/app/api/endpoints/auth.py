@@ -136,37 +136,48 @@ async def register(response: Response, user_in: UserCreate, db: AsyncSession = D
     if not PhoneValidator.validate(user_in.phone):
         raise HTTPException(status_code=400, detail="Invalid phone number. Use Kenya format (e.g., 0712345678 or +254712345678)")
     
-    # Check if user already exists
-    result = await db.execute(select(User).filter(User.email == user_in.email))
-    user = result.scalars().first()
-    if user:
-        raise HTTPException(status_code=409, detail="A user with this email already exists.")
-    
-    # Normalize phone number
-    normalized_phone = PhoneValidator.normalize(user_in.phone)
-    
-    new_user = User(
-        email=user_in.email,
-        phone=normalized_phone,
-        hashed_password=get_password_hash(user_in.password),
-        first_name=user_in.first_name,
-        last_name=user_in.last_name,
-        role=user_in.role
-    )
-    db.add(new_user)
-    await db.commit()
-    await db.refresh(new_user)
-    
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": new_user.email}, expires_delta=access_token_expires
-    )
-    
-    # Set HttpOnly Cookie
-
-    
-    logger.info(f"New user registered: {new_user.email}")
-    return {"access_token": access_token, "token_type": "bearer"}
+    print(f"[RMS AUTH] Registering user: {user_in.email}")
+    try:
+        # Check if user already exists
+        print("[RMS AUTH] Checking if user exists...")
+        result = await db.execute(select(User).filter(User.email == user_in.email))
+        user = result.scalars().first()
+        if user:
+            print(f"[RMS AUTH] User already exists: {user_in.email}")
+            raise HTTPException(status_code=409, detail="A user with this email already exists.")
+        
+        # Normalize phone number
+        print("[RMS AUTH] Normalizing phone...")
+        normalized_phone = PhoneValidator.normalize(user_in.phone)
+        
+        print("[RMS AUTH] Hashing password and creating user...")
+        new_user = User(
+            email=user_in.email,
+            phone=normalized_phone,
+            hashed_password=get_password_hash(user_in.password),
+            first_name=user_in.first_name,
+            last_name=user_in.last_name,
+            role=user_in.role
+        )
+        db.add(new_user)
+        print("[RMS AUTH] Committing to DB...")
+        await db.commit()
+        print("[RMS AUTH] Refreshing user...")
+        await db.refresh(new_user)
+        
+        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": new_user.email}, expires_delta=access_token_expires
+        )
+        
+        print(f"[RMS AUTH] Registration successful for: {new_user.email}")
+        return {"access_token": access_token, "token_type": "bearer"}
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"[RMS AUTH ERROR] Registration failed: {str(e)}")
+        print(error_trace)
+        raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
 
 @router.post("/login", response_model=Token)
 async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):

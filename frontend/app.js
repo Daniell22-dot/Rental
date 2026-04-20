@@ -259,31 +259,50 @@ async function handleRegistration(event) {
             terms_accepted: termsAccepted
         };
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+
         const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(userData)
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(userData),
+            signal: controller.signal
         });
+
+        clearTimeout(timeoutId);
 
         if (response.ok) {
             const data = await response.json();
-            alert('Account created successfully! You can now log in.');
-            window.location.href = 'index.html';
+            // Show success panel instead of just an alert
+            const formPanel = document.getElementById('form-panel');
+            const successPanel = document.getElementById('success-panel');
+            if (formPanel && successPanel) {
+                formPanel.style.display = 'none';
+                successPanel.style.display = 'block';
+            } else {
+                alert('Registration successful! Please log in.');
+                window.location.href = 'index.html';
+            }
         } else {
-            const error = await response.json();
-            alert('Registration failed: ' + (error.detail || 'Please try again.'));
+            let errorMsg = `Server Error (${response.status})`;
+            try {
+                const errorData = await response.json();
+                errorMsg = errorData.detail || errorMsg;
+            } catch (jsonErr) {
+                // If not JSON, get the text (Vercel often returns text for 500s)
+                const text = await response.text();
+                errorMsg = text || errorMsg;
+            }
+            alert('Registration failed: ' + errorMsg);
             generateRegCaptcha();
         }
     } catch (err) {
         console.error('Registration error:', err);
-        const errorMsg = `Registration Network Error:\nMessage: ${err.message}\nStack: ${err.stack ? err.stack.substring(0, 100) : 'N/A'}`;
-        alert(errorMsg);
+        alert(`Registration Error: ${err.message}`);
+        generateRegCaptcha();
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
-        generateRegCaptcha();
     }
 }
 
