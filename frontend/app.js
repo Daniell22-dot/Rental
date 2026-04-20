@@ -289,9 +289,8 @@ async function handleRegistration(event) {
                 const errorData = await response.json();
                 errorMsg = errorData.detail || errorMsg;
             } catch (jsonErr) {
-                // If not JSON, get the text (Vercel often returns text for 500s)
                 const text = await response.text();
-                errorMsg = text || errorMsg;
+                errorMsg = text.substring(0, 100) || errorMsg;
             }
             alert('Registration failed: ' + errorMsg);
             generateRegCaptcha();

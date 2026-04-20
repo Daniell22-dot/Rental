@@ -115,6 +115,21 @@ async def trigger_reminders():
     await send_rent_reminders()
     return {"status": "reminders_sent", "timestamp": datetime.utcnow().isoformat()}
 
+@app.on_event("startup")
+async def on_startup():
+    print("[RMS STARTUP] Initializing database tables...")
+    try:
+        from app.core.database import engine, Base
+        import app.models.users
+        import app.models.property
+        import app.models.unit
+        import app.models.tenant
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        print("[RMS STARTUP] Database tables verified/created.")
+    except Exception as e:
+        print(f"[RMS STARTUP ERROR] Database initialization failed: {e}")
+
 @app.get("/health")
 async def health_check():
     return {
