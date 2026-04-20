@@ -55,7 +55,7 @@ This system provides a comprehensive platform for landlords and property manager
 
 1. Clone the repository:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/Daniell22-dot/Rental.git
    cd RMS
    ```
 
