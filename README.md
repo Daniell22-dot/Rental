@@ -5,6 +5,7 @@ A production-ready web application for managing rental properties, tenants, and 
 ## Overview
 
 This system provides a comprehensive platform for landlords and property managers to:
+
 - Manage properties and units.
 - Track tenant registration and lease agreements.
 - Automate rent payment tracking and overdue notifications.
@@ -14,17 +15,20 @@ This system provides a comprehensive platform for landlords and property manager
 ## Technical Stack
 
 ### Backend
+
 - Framework: FastAPI
 - ORM: SQLAlchemy (Asynchronous)
 - Database: PostgreSQL (Supabase)
 - Authentication: JWT-based secure auth
 
 ### Frontend
+
 - Structure: HTML5
 - Styling: Vanilla CSS (Custom design system)
 - Logic: JavaScript (ES6+)
 
 ### Infrastructure
+
 - Deployment: Vercel
 - Database Hosting: Supabase
 - Integration: SMTP for email notifications, M-PESA for payment processing (optional)
@@ -48,29 +52,34 @@ This system provides a comprehensive platform for landlords and property manager
 ## Local Setup
 
 ### Prerequisites
+
 - Python 3.8+
 - PostgreSQL database
 
 ### Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/Daniell22-dot/Rental.git
    cd RMS
    ```
 
 2. Create and activate a virtual environment:
+
    ```bash
    python -m venv .venv
    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
    ```
 
 3. Install dependencies:
+
    ```bash
    pip install -r requirements.txt
    ```
 
 4. Configure environment variables in `backend/.env`:
+
    ```text
    DATABASE_URL=your_postgresql_url
    SECRET_KEY=your_secret_key
@@ -78,6 +87,7 @@ This system provides a comprehensive platform for landlords and property manager
    ```
 
 5. Run the application:
+
    ```bash
    uvicorn backend.app.main:app --reload
    ```
@@ -87,11 +97,13 @@ This system provides a comprehensive platform for landlords and property manager
 The application is specifically optimized for Vercel's serverless environment.
 
 ### Optimization Highlights
+
 - Serverless-friendly database pooling (NullPool).
 - Automated routing for static and API assets via `vercel.json`.
 - Compatible with Supabase Transaction Mode pooler (Port 6543).
 
 ### Configuration
+
 1. Connect your GitHub repository to Vercel.
 2. Set the following Environment Variables in the Vercel Dashboard:
    - `DATABASE_URL`: Your Supabase connection string.

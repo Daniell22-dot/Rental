@@ -1,4 +1,5 @@
 # backend/app/main.py
+print("[RMS DEBUG] Loading main.py module...")
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -120,6 +121,12 @@ async def health_check():
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat()
     }
+
+@app.get("/api/v1/ping")
+async def ping():
+    """Simple database-free ping to verify connectivity"""
+    print("[RMS DEBUG] Ping endpoint reached")
+    return {"status": "pong", "timestamp": datetime.utcnow().isoformat()}
 
 # Redirect admin/landlord UI requests on port 8001 to separate ports
 

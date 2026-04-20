@@ -200,14 +200,9 @@ async function handleLogin(event) {
             alert('Login failed: ' + (error.detail || 'Invalid credentials'));
             generateCaptcha();
         }
-    } catch (err) {
         console.error('Login error:', err);
-        if (err.name === 'AbortError') {
-            alert('Login timeout. The server is not responding. Please check your network and try again.');
-        } else {
-            alert('Network error. Please check your connection.');
-        }
-    } finally {
+        const errorMsg = `Login Network Error:\nMessage: ${err.message}\nStack: ${err.stack ? err.stack.substring(0, 100) : 'N/A'}`;
+        alert(errorMsg);
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
         generateCaptcha();
@@ -278,7 +273,8 @@ async function handleRegistration(event) {
         }
     } catch (err) {
         console.error('Registration error:', err);
-        alert('Network error. Please check your connection and try again.');
+        const errorMsg = `Registration Network Error:\nMessage: ${err.message}\nStack: ${err.stack ? err.stack.substring(0, 100) : 'N/A'}`;
+        alert(errorMsg);
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;

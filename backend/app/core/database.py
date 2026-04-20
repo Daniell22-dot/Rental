@@ -6,6 +6,7 @@ from app.config import settings
 import logging
 from typing import AsyncGenerator
 
+print("[RMS DEBUG] Loading database.py module...")
 logger = logging.getLogger(__name__)
 
 # Create async engine with optimized connection pooling for serverless
@@ -40,6 +41,13 @@ if pool_class == QueuePool:
         "max_overflow": settings.DB_MAX_OVERFLOW,
         "pool_recycle": 3600,
     })
+else:
+    # Explicitly ensure pool_size/max_overflow are NOT in kwargs for NullPool
+    engine_kwargs.pop("pool_size", None)
+    engine_kwargs.pop("max_overflow", None)
+    print(f"[RMS DEBUG] Using NullPool. Arguments filtered: {list(engine_kwargs.keys())}")
+
+print(f"[RMS DEBUG] Creating engine with class: {pool_class.__name__}")
 
 engine = create_async_engine(
     settings.ASYNC_DATABASE_URL,
