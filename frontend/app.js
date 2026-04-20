@@ -103,14 +103,6 @@ async function handleLogin(event) {
     event.preventDefault();
     const email = document.getElementById('login-email').value;
     const pass = document.getElementById('login-pass').value;
-    const userCaptcha = document.getElementById('captcha-ans').value;
-
-    // Validate CAPTCHA if not in dev mode
-    if (!isDevMode && parseInt(userCaptcha) !== captchaAnswer) {
-        alert('Incorrect CAPTCHA. Please try again.');
-        generateCaptcha();
-        return;
-    }
 
     const submitBtn = event.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.textContent;
@@ -122,7 +114,6 @@ async function handleLogin(event) {
         formData.append('username', email);
         formData.append('password', pass);
 
-        // Create abort controller with 15 second timeout
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000);
 
@@ -138,14 +129,12 @@ async function handleLogin(event) {
             const data = await response.json();
             localStorage.setItem('rms-token', data.access_token);
             
-            // Fetch user info to determine role and redirect appropriately
             try {
                 const userRes = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
                     headers: { 'Authorization': `Bearer ${data.access_token}` }
                 });
                 if (userRes.ok) {
                     const userData = await userRes.json();
-                    // Redirect based on user role
                     switch (userData.role) {
                         case 'admin':
                         case 'property_manager':
@@ -160,7 +149,6 @@ async function handleLogin(event) {
                             break;
                     }
                 } else {
-                    // Fallback to tenant portal if we can't get user info
                     window.location.href = 'index.html';
                 }
             } catch (err) {
@@ -174,16 +162,90 @@ async function handleLogin(event) {
             } catch (e) {
                 alert('Login failed: ' + response.status);
             }
-            generateCaptcha();
         }
     } catch (err) {
         console.error('Login error:', err);
-        const errorMsg = `Login Network Error:\nMessage: ${err.message}\nStack: ${err.stack ? err.stack.substring(0, 100) : 'N/A'}`;
-        alert(errorMsg);
+        alert(`Login Error: ${err.message}`);
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
-        generateCaptcha();
+    }
+}
+
+async function handleRegistration(event) {
+    event.preventDefault();
+    const firstName = document.getElementById('reg-first').value;
+    const lastName = document.getElementById('reg-last').value;
+    const email = document.getElementById('reg-email').value;
+    const phone = document.getElementById('reg-phone').value;
+    const password = document.getElementById('reg-pass').value;
+    const termsAccepted = document.getElementById('reg-tos').checked;
+
+    if (!termsAccepted) {
+        alert('You must accept the Terms of Service to create an account.');
+        return;
+    }
+
+    if (!firstName || !lastName || !email || !phone || !password) {
+        alert('Please fill in all required fields.');
+        return;
+    }
+
+    const submitBtn = event.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Creating Account...';
+
+    try {
+        const userData = {
+            email: email,
+            phone: phone,
+            password: password,
+            first_name: firstName,
+            last_name: lastName,
+            role: 'tenant',
+            terms_accepted: termsAccepted
+        };
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+        const response = await fetch(`${API_BASE_URL}/api/v1/auth/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(userData),
+            signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+            const formPanel = document.getElementById('form-panel');
+            const successPanel = document.getElementById('success-panel');
+            if (formPanel && successPanel) {
+                formPanel.style.display = 'none';
+                successPanel.style.display = 'block';
+            } else {
+                alert('Registration successful! Please log in.');
+                window.location.href = 'index.html';
+            }
+        } else {
+            let errorMsg = `Server Error (${response.status})`;
+            try {
+                const errorData = await response.json();
+                errorMsg = errorData.detail || errorMsg;
+            } catch (jsonErr) {
+                const text = await response.text();
+                errorMsg = text.substring(0, 100) || errorMsg;
+            }
+            alert('Registration failed: ' + errorMsg);
+        }
+    } catch (err) {
+        console.error('Registration error:', err);
+        alert(`Registration Error: ${err.message}`);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalText;
     }
 }
 
