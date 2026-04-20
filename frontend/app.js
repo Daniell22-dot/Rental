@@ -1,6 +1,5 @@
 // Main JavaScript for Rental Management System Tenant Portal
 // This file handles all frontend logic, including authentication, data fetching, view management, and user interactions.
-// let cuurrentUser = null means that we will store the currently logged-in user's information in this variable after successful authentication. This allows us to easily access user details throughout the app without needing to repeatedly fetch them from the server.
 let currentUser = null;
 let allNotifications = [];
 let currentFilter = 'all';
@@ -63,7 +62,6 @@ async function apiCall(url, options = {}) {
 const isDevMode = new URLSearchParams(window.location.search).has('dev');
 
 let captchaAnswer = 0;
-let regCaptchaAnswer = 0;
 
 function generateCaptcha() {
     const q = document.getElementById('captcha-q');
@@ -96,29 +94,9 @@ function generateCaptcha() {
     if (input) input.value = '';
 }
 
+// Registration CAPTCHA is disabled - kept for compatibility
 function generateRegCaptcha() {
-    const q = document.getElementById('reg-captcha-q');
-    if (!q) {
-        console.warn('Registration CAPTCHA element not found');
-        return;
-    }
-
-    if (isDevMode) {
-        regCaptchaAnswer = 0;
-        q.textContent = 'Dev Mode: Enter 0';
-        console.log('Registration CAPTCHA bypassed for development');
-        const input = document.getElementById('reg-captcha-ans');
-        if (input) input.value = '0';
-        return;
-    }
-
-    const n1 = Math.floor(Math.random() * 10);
-    const n2 = Math.floor(Math.random() * 10);
-    regCaptchaAnswer = n1 + n2;
-    q.textContent = `Verify: ${n1} + ${n2} = ?`;
-    console.log('Registration CAPTCHA generated:', n1 + ' + ' + n2 + ' = ' + regCaptchaAnswer);
-    const input = document.getElementById('reg-captcha-ans');
-    if (input) input.value = '';
+    console.log('Registration CAPTCHA is disabled');
 }
 
 async function handleLogin(event) {
@@ -127,6 +105,12 @@ async function handleLogin(event) {
     const pass = document.getElementById('login-pass').value;
     const userCaptcha = document.getElementById('captcha-ans').value;
 
+    // Validate CAPTCHA if not in dev mode
+    if (!isDevMode && parseInt(userCaptcha) !== captchaAnswer) {
+        alert('Incorrect CAPTCHA. Please try again.');
+        generateCaptcha();
+        return;
+    }
 
     const submitBtn = event.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.textContent;
@@ -210,13 +194,17 @@ async function handleRegistration(event) {
     const email = document.getElementById('reg-email').value;
     const phone = document.getElementById('reg-phone').value;
     const password = document.getElementById('reg-pass').value;
-    const userCaptcha = document.getElementById('reg-captcha-ans').value;
     const termsAccepted = document.getElementById('reg-tos').checked;
-
 
     // Validate terms acceptance
     if (!termsAccepted) {
         alert('You must accept the Terms of Service to create an account.');
+        return;
+    }
+
+    // Validate required fields
+    if (!firstName || !lastName || !email || !phone || !password) {
+        alert('Please fill in all required fields.');
         return;
     }
 
@@ -270,12 +258,10 @@ async function handleRegistration(event) {
                 errorMsg = text.substring(0, 100) || errorMsg;
             }
             alert('Registration failed: ' + errorMsg);
-            generateRegCaptcha();
         }
     } catch (err) {
         console.error('Registration error:', err);
         alert(`Registration Error: ${err.message}`);
-        generateRegCaptcha();
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
