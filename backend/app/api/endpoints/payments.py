@@ -60,7 +60,7 @@ async def get_all_payments(
     
     result = await db.execute(
         select(Payment, User)
-        .join(User, Payment.user_id == User.id)
+        .outerjoin(User, Payment.user_id == User.id)
         .order_by(desc(Payment.payment_date))
         .limit(limit)
     )
@@ -73,7 +73,7 @@ async def get_all_payments(
         "payment_method": p.payment_method,
         "status": p.status,
         "receipt_url": p.receipt_url,
-        "tenant_name": f"{user.first_name} {user.last_name}"
+        "tenant_name": f"{user.first_name} {user.last_name}" if user else "System/Unknown"
     } for p, user in results]
 
 @router.get("/recent", response_model=List[PaymentResponse])
@@ -86,7 +86,7 @@ async def get_recent_payments(
     
     result = await db.execute(
         select(Payment, User, Tenant)
-        .join(User, Payment.user_id == User.id)
+        .outerjoin(User, Payment.user_id == User.id)
         .outerjoin(Tenant, Payment.tenant_id == Tenant.id)
         .order_by(desc(Payment.payment_date))
         .limit(limit)
@@ -100,7 +100,9 @@ async def get_recent_payments(
         "payment_method": p.payment_method,
         "status": p.status,
         "receipt_url": p.receipt_url,
-        "tenant_name": f"{user.first_name} {user.last_name}",
+        "tenant_name": f"{user.first_name} {user.last_name}" if user else (
+            f"{tenant.first_name} {tenant.last_name}" if tenant else "System/Unknown"
+        ),
         "property_name": tenant.unit.property.name if tenant and tenant.unit else "N/A"
     } for p, user, tenant in results]
 
