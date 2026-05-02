@@ -35,6 +35,9 @@
                     <a href="#" onclick="showLandlordView('maintenance')">
                         <i class="fas fa-tools"></i> Maintenance
                     </a>
+                    <a href="#" onclick="showLandlordView('utilities')">
+                        <i class="fas fa-tint"></i> Utilities
+                    </a>
                     <a href="#" onclick="showLandlordView('reports')">
                         <i class="fas fa-file-alt"></i> Reports
                     </a>
@@ -135,6 +138,154 @@
 
                     <div id="maintenance" class="content-view">
                         <div id="maintenance-requests-list"></div>
+                    </div>
+
+                    <!-- ═══ UTILITIES VIEW ═══ -->
+                    <div id="utilities" class="content-view">
+                        
+                        <!-- Profit Summary Cards -->
+                        <div class="stats-grid" id="utility-profit-stats">
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background:#e0f2fe;"><i class="fas fa-tint" style="color:#0284c7;"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Water Income</span>
+                                    <h3 id="water-income">Ksh 0</h3>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background:#f0fdf4;"><i class="fas fa-wifi" style="color:#16a34a;"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Wifi Income</span>
+                                    <h3 id="wifi-income">Ksh 0</h3>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background:#fefce8;"><i class="fas fa-coins" style="color:#ca8a04;"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Total Utility Income</span>
+                                    <h3 id="total-utility-income">Ksh 0</h3>
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-icon" style="background:#fef2f2;"><i class="fas fa-clock" style="color:#dc2626;"></i></div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Pending Charges</span>
+                                    <h3 id="pending-utility-count">0</h3>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Entry Forms Row -->
+                        <div class="utility-forms-row">
+                            <!-- Water Charge Form -->
+                            <div class="card utility-form-card">
+                                <div class="utility-form-header">
+                                    <i class="fas fa-tint" style="color:#0284c7;"></i>
+                                    <h3>Add Water Charge</h3>
+                                </div>
+                                <form id="water-charge-form" onsubmit="submitUtilityCharge(event, 'water')">
+                                    <div class="form-group">
+                                        <label for="water-unit-id">Unit</label>
+                                        <select id="water-unit-id" required>
+                                            <option value="">Select Unit...</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="water-units">Units Consumed</label>
+                                            <input type="number" id="water-units" step="0.01" min="0" placeholder="e.g. 12.5" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="water-amount">Amount (Ksh)</label>
+                                            <input type="number" id="water-amount" step="0.01" min="0" placeholder="e.g. 1500" required>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="water-month">Billing Month</label>
+                                        <input type="month" id="water-month" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="water-notes">Notes (optional)</label>
+                                        <input type="text" id="water-notes" placeholder="Any notes...">
+                                    </div>
+                                    <button type="submit" class="btn-primary btn-block"><i class="fas fa-plus"></i> Add Water Charge</button>
+                                </form>
+                            </div>
+
+                            <!-- Wifi Charge Form -->
+                            <div class="card utility-form-card">
+                                <div class="utility-form-header">
+                                    <i class="fas fa-wifi" style="color:#16a34a;"></i>
+                                    <h3>Add Wifi Charge</h3>
+                                </div>
+                                <form id="wifi-charge-form" onsubmit="submitUtilityCharge(event, 'wifi')">
+                                    <div class="form-group">
+                                        <label for="wifi-unit-id">Unit</label>
+                                        <select id="wifi-unit-id" required>
+                                            <option value="">Select Unit...</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="wifi-amount">Amount (Ksh)</label>
+                                        <input type="number" id="wifi-amount" step="0.01" min="0" placeholder="e.g. 500" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="wifi-month">Billing Month</label>
+                                        <input type="month" id="wifi-month" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="wifi-notes">Notes (optional)</label>
+                                        <input type="text" id="wifi-notes" placeholder="Any notes...">
+                                    </div>
+                                    <button type="submit" class="btn-primary btn-block" style="background:#16a34a;"><i class="fas fa-plus"></i> Add Wifi Charge</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Charges History -->
+                        <div class="card">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:0.75rem;">
+                                <h3 style="margin:0;">Utility Charges History</h3>
+                                <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+                                    <select id="filter-utility-type" onchange="loadUtilityCharges()" style="padding:0.4rem 0.6rem; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:0.8rem; background:var(--bg-main); color:var(--text-main);">
+                                        <option value="">All Types</option>
+                                        <option value="water">Water</option>
+                                        <option value="wifi">Wifi</option>
+                                    </select>
+                                    <input type="month" id="filter-utility-month" onchange="loadUtilityCharges()" style="padding:0.4rem 0.6rem; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:0.8rem; background:var(--bg-main); color:var(--text-main);">
+                                </div>
+                            </div>
+                            <div class="table-container">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Unit</th>
+                                            <th>Property</th>
+                                            <th>Tenant</th>
+                                            <th>Type</th>
+                                            <th>Units</th>
+                                            <th>Amount</th>
+                                            <th>Month</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="utility-charges-table"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Invoice Modal -->
+                    <div id="invoice-modal" class="modal" style="display:none;">
+                        <div class="modal-content" style="max-width:650px;">
+                            <span class="close" onclick="closeInvoiceModal()">&times;</span>
+                            <div id="invoice-content"></div>
+                            <div style="display:flex; gap:0.75rem; margin-top:1.25rem;">
+                                <button onclick="printInvoice()" class="btn-primary"><i class="fas fa-print"></i> Print Invoice</button>
+                                <button onclick="closeInvoiceModal()" class="btn-secondary">Close</button>
+                            </div>
+                        </div>
                     </div>
 
                     <div id="reports" class="content-view">

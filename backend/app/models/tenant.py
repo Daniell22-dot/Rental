@@ -37,3 +37,4 @@ class Tenant(BaseModel):
     payments = relationship("Payment", back_populates="tenant")
     maintenance_requests = relationship("MaintenanceRequest", back_populates="tenant")
     documents = relationship("Document", back_populates="tenant")
+    utility_charges = relationship("UtilityCharge", back_populates="tenant")
