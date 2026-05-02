@@ -57,3 +57,34 @@ async def submit_review(
     db.add(review)
     await db.commit()
     return {"message": "Review submitted successfully"}
+
+@router.get("/feedback")
+async def get_all_feedback(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    from sqlalchemy import desc
+    from app.models.tenant import Tenant
+    
+    # Check if user is admin/owner
+    if current_user.role not in ['admin', 'landlord', 'property_manager']:
+        raise HTTPException(status_code=403, detail="Not authorized to view feedback")
+        
+    result = await db.execute(
+        select(Feedback, Tenant, User)
+        .join(Tenant, Feedback.tenant_id == Tenant.id)
+        .join(User, Tenant.user_id == User.id)
+        .order_by(desc(Feedback.created_at))
+    )
+    
+    feedbacks = result.all()
+    
+    return [{
+        "id": f.id,
+        "subject": f.subject,
+        "message": f.message,
+        "status": f.status,
+        "created_at": f.created_at,
+        "tenant_name": f"{u.first_name} {u.last_name}" if u else "Unknown",
+        "tenant_id": t.id
+    } for f, t, u in feedbacks]
