@@ -254,10 +254,7 @@ async function updateRequestStatus(requestId, status) {
     }
 }
 
-function generateReport() {
-    const type = document.getElementById('report-type').value;
-    alert(`Generating ${type} report - Coming soon!`);
-}
+
 
 function logout() {
     localStorage.removeItem('rms-landlord-token');
@@ -376,9 +373,9 @@ async function loadUtilityCharges() {
             return `
                 <tr>
                     <td>${typeBadge}</td>
-                    <td>${c.billing_month}</td>
                     <td>${c.units_consumed != null ? c.units_consumed : '—'}</td>
                     <td><strong>Ksh ${c.amount.toLocaleString()}</strong></td>
+                    <td>${c.billing_month}</td>
                     <td><span class="status-badge ${statusClass}">${c.status}</span></td>
                     <td>
                         <div style="display:flex; gap:0.25rem;">
