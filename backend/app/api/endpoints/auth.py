@@ -61,9 +61,10 @@ class UserCreate(BaseModel):
     phone: str
     password: str
     first_name: str
-    last_name: str
     role: UserRole = UserRole.TENANT
     terms_accepted: bool
+    room_number: Optional[str] = None
+    monthly_rent: Optional[float] = None
 
 class UserOut(BaseModel):
     id: int
@@ -168,13 +169,61 @@ async def register(response: Response, user_in: UserCreate, db: AsyncSession = D
         
         # Create corresponding Tenant record so admin/landlord dashboards can see this tenant
         if new_user.role == UserRole.TENANT:
+            from app.models.property import Property
+            from app.models.unit import Unit
+            
             print(f"[RMS AUTH] Creating tenant record for user {new_user.id}...")
+            
+            # Handle Room Assignment if provided
+            unit_id = None
+            if user_in.room_number:
+                # 1. Get or Create Default Property
+                prop_result = await db.execute(select(Property).limit(1))
+                default_prop = prop_result.scalars().first()
+                if not default_prop:
+                    default_prop = Property(
+                        name="Main Property",
+                        address="Default Address",
+                        property_type="apartment"
+                    )
+                    db.add(default_prop)
+                    await db.commit()
+                    await db.refresh(default_prop)
+                
+                # 2. Get or Create Unit
+                unit_result = await db.execute(
+                    select(Unit).where(
+                        Unit.property_id == default_prop.id,
+                        Unit.unit_number == user_in.room_number
+                    )
+                )
+                unit = unit_result.scalars().first()
+                if not unit:
+                    unit = Unit(
+                        property_id=default_prop.id,
+                        unit_number=user_in.room_number,
+                        monthly_rent=user_in.monthly_rent or 0.0,
+                        is_occupied=True
+                    )
+                    db.add(unit)
+                    await db.commit()
+                    await db.refresh(unit)
+                else:
+                    # Update rent if provided
+                    if user_in.monthly_rent:
+                        unit.monthly_rent = user_in.monthly_rent
+                    unit.is_occupied = True
+                    await db.commit()
+                
+                unit_id = unit.id
+
             new_tenant = Tenant(
                 user_id=new_user.id,
                 first_name=new_user.first_name,
                 last_name=new_user.last_name,
                 email=new_user.email,
                 phone=new_user.phone,
+                unit_id=unit_id,
                 status='active'
             )
             db.add(new_tenant)

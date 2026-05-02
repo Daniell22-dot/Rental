@@ -174,7 +174,7 @@ async def get_dashboard_metrics(
     # Calculate overdue amount
     result = await db.execute(
         select(func.sum(Payment.amount)).where(
-            Payment.status == PaymentStatus.OVERDUE
+            Payment.status == 'overdue'
         )
     )
     overdue_amount = result.scalar() or 0.0

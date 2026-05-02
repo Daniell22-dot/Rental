@@ -204,7 +204,9 @@ async function handleRegistration(event) {
             first_name: firstName,
             last_name: lastName,
             role: 'tenant',
-            terms_accepted: termsAccepted
+            terms_accepted: termsAccepted,
+            room_number: document.getElementById('reg-room').value,
+            monthly_rent: parseFloat(document.getElementById('reg-rent').value) || 0
         };
 
         const controller = new AbortController();
@@ -283,7 +285,9 @@ async function handleRegistration(event) {
             first_name: firstName,
             last_name: lastName,
             role: 'tenant', // Default role
-            terms_accepted: termsAccepted
+            terms_accepted: termsAccepted,
+            room_number: document.getElementById('reg-room').value,
+            monthly_rent: parseFloat(document.getElementById('reg-rent').value) || 0
         };
 
         const controller = new AbortController();
@@ -385,16 +389,8 @@ async function initApp() {
             day: 'numeric' 
         });
 
-        // Check Room Assignment status
-        const status = await apiCall('/api/v1/tenants/my-status');
-        if (!status.has_unit) {
-            console.log("No room assigned. Redirecting to room assignment view.");
-            showView('room-assignment-view');
-            loadAvailableUnits();
-            return; // Stop further loading until room is picked
-        }
-        
-        // Load all data
+        // Room Assignment View bypassed since room is selected at registration
+        // Just directly load all data
         await Promise.all([
             loadDashboardData(),
             loadNotifications(),

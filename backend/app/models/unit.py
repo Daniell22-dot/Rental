@@ -17,4 +17,3 @@ class Unit(BaseModel):
     property = relationship("Property", back_populates="units")
     tenants = relationship("Tenant", back_populates="unit")
     leases = relationship("Lease", back_populates="unit")
-    utility_charges = relationship("UtilityCharge", back_populates="unit", cascade="all, delete-orphan")

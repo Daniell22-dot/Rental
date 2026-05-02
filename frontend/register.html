@@ -43,6 +43,16 @@
                         <label>Phone Number</label>
                         <input type="text" id="reg-phone" placeholder="0712 345 678" required>
                     </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <div class="auth-field">
+                            <label>Room Number</label>
+                            <input type="text" id="reg-room" placeholder="e.g. 10" required>
+                        </div>
+                        <div class="auth-field">
+                            <label>Monthly Rent (Ksh)</label>
+                            <input type="number" id="reg-rent" placeholder="0" required>
+                        </div>
+                    </div>
                     <div class="auth-field">
                         <label>Password</label>
                         <input type="password" id="reg-pass" placeholder="Min. 8 characters" required oninput="checkPasswordStrength()">

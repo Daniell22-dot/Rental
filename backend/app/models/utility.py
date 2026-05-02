@@ -14,8 +14,6 @@ class UtilityCharge(BaseModel):
     __tablename__ = 'utility_charges'
     
     id = Column(Integer, primary_key=True, index=True)
-    unit_id = Column(Integer, ForeignKey('units.id'), nullable=False)
-    tenant_id = Column(Integer, ForeignKey('tenants.id'), nullable=True)
     
     # Type: 'water' or 'wifi'
     utility_type = Column(String(20), nullable=False, index=True)
@@ -36,7 +34,3 @@ class UtilityCharge(BaseModel):
     
     # Who entered this charge
     created_by_user_id = Column(Integer, ForeignKey('users.id'), nullable=True)
-    
-    # Relationships
-    unit = relationship("Unit", back_populates="utility_charges")
-    tenant = relationship("Tenant", back_populates="utility_charges")
