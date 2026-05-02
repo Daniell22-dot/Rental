@@ -674,6 +674,56 @@ async function loadFeedback() {
     }
 }
 
+async function generateReport() {
+    const type = document.getElementById('report-type').value;
+    const output = document.getElementById('report-output');
+    output.innerHTML = '<div style="text-align:center; padding:2rem;"><i class="fas fa-spinner fa-spin"></i> Generating...</div>';
+    
+    try {
+        const token = localStorage.getItem('rms-landlord-token');
+        
+        if (type === 'revenue') {
+            // Fetch summary metrics
+            const res = await fetch('/api/v1/admin/metrics', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const metrics = await res.json();
+            
+            // Fetch utility summary
+            const utilRes = await fetch('/api/v1/utilities/summary', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const utilSummary = await utilRes.json();
+            
+            const totalUtilityExpenses = (utilSummary.total_water || 0) + (utilSummary.total_wifi || 0);
+            const netProfit = (metrics.total_revenue || 0) - totalUtilityExpenses;
+            
+            output.innerHTML = `
+                <div class="card" style="margin-top:1rem; border-left: 4px solid var(--accent);">
+                    <h4>Revenue Report Summary</h4>
+                    <table class="data-table" style="margin-top:1rem;">
+                        <tr><td>Total Rent Collected</td><td>Ksh ${(metrics.total_revenue || 0).toLocaleString()}</td></tr>
+                        <tr><td>Total Water Expenses</td><td>- Ksh ${(utilSummary.total_water || 0).toLocaleString()}</td></tr>
+                        <tr><td>Total Wifi Expenses</td><td>- Ksh ${(utilSummary.total_wifi || 0).toLocaleString()}</td></tr>
+                        <tr style="font-weight:bold; color:var(--success);">
+                            <td>Net Owner Profit</td>
+                            <td>Ksh ${netProfit.toLocaleString()}</td>
+                        </tr>
+                    </table>
+                    <div style="margin-top:1rem; font-size:0.8rem; color:var(--text-muted);">
+                        Generated on ${new Date().toLocaleString()}
+                    </div>
+                </div>
+            `;
+        } else {
+            output.innerHTML = `<div class="card" style="margin-top:1rem; color:var(--text-muted);">${type.charAt(0).toUpperCase() + type.slice(1)} report details - Coming soon with historical trends!</div>`;
+        }
+    } catch (err) {
+        console.error('Error generating report:', err);
+        output.innerHTML = '<div class="card" style="margin-top:1rem; color:var(--danger);">Failed to generate report data.</div>';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const savedTheme = localStorage.getItem('rms-theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
