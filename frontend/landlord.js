@@ -382,13 +382,7 @@ async function submitUtilityCharge(event, utilityType) {
     event.preventDefault();
     const token = localStorage.getItem('rms-landlord-token');
     
-    const unitId = parseInt(document.getElementById(`${utilityType}-unit-id`).value);
-    const amount = parseFloat(document.getElementById(`${utilityType}-amount`).value);
-    const billingMonth = document.getElementById(`${utilityType}-month`).value;
-    const notes = document.getElementById(`${utilityType}-notes`).value;
-    
     const payload = {
-        unit_id: unitId,
         utility_type: utilityType,
         amount: amount,
         billing_month: billingMonth,
@@ -445,14 +439,11 @@ async function loadUtilityCharges() {
         const charges = await res.json();
         
         if (!charges || !Array.isArray(charges) || charges.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:2rem; color:var(--text-muted);">No utility charges found. Add your first charge above.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem; color:var(--text-muted);">No utility charges found. Add your first charge above.</td></tr>';
             return;
         }
         
         tbody.innerHTML = charges.map(c => {
-            const typeIcon = c.utility_type === 'water' 
-                ? '<i class="fas fa-tint" style="color:#0284c7;"></i>' 
-                : '<i class="fas fa-wifi" style="color:#16a34a;"></i>';
             const typeBadge = c.utility_type === 'water'
                 ? '<span class="utility-type-badge water">Water</span>'
                 : '<span class="utility-type-badge wifi">Wifi</span>';
@@ -460,22 +451,13 @@ async function loadUtilityCharges() {
             
             return `
                 <tr>
-                    <td>${escapeHtml(c.unit_number) || c.unit_id}</td>
-                    <td>${escapeHtml(c.property_name) || 'N/A'}</td>
-                    <td>${escapeHtml(c.tenant_name) || 'N/A'}</td>
                     <td>${typeBadge}</td>
+                    <td>${c.billing_month}</td>
                     <td>${c.units_consumed != null ? c.units_consumed : '—'}</td>
                     <td><strong>Ksh ${c.amount.toLocaleString()}</strong></td>
-                    <td>${c.billing_month}</td>
                     <td><span class="status-badge ${statusClass}">${c.status}</span></td>
                     <td>
                         <div style="display:flex; gap:0.25rem;">
-                            <button onclick="toggleUtilityStatus(${c.id}, '${c.status}')" class="icon-btn" title="${c.status === 'pending' ? 'Mark as Paid' : 'Mark as Pending'}">
-                                <i class="fas ${c.status === 'pending' ? 'fa-check-circle' : 'fa-undo'}" style="color:${c.status === 'pending' ? 'var(--success)' : 'var(--warning)'}"></i>
-                            </button>
-                            <button onclick="viewUtilityInvoice(${c.unit_id}, '${c.billing_month}')" class="icon-btn" title="View Invoice">
-                                <i class="fas fa-file-invoice" style="color:var(--accent)"></i>
-                            </button>
                             <button onclick="deleteUtilityCharge(${c.id})" class="icon-btn" title="Delete">
                                 <i class="fas fa-trash" style="color:var(--danger)"></i>
                             </button>
@@ -486,7 +468,7 @@ async function loadUtilityCharges() {
         }).join('');
     } catch (err) {
         console.error('Error loading utility charges:', err);
-        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:2rem;">Error loading charges.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:2rem;">Error loading charges.</td></tr>';
     }
 }
 
