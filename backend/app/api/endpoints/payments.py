@@ -46,7 +46,7 @@ async def get_my_payments(
         "amount": p.amount,
         "payment_date": p.payment_date,
         "payment_method": p.payment_method,
-        "status": p.status.value,
+        "status": p.status,
         "receipt_url": p.receipt_url
     } for p in payments]
 
@@ -71,7 +71,7 @@ async def get_all_payments(
         "amount": p.amount,
         "payment_date": p.payment_date,
         "payment_method": p.payment_method,
-        "status": p.status.value,
+        "status": p.status,
         "receipt_url": p.receipt_url,
         "tenant_name": f"{user.first_name} {user.last_name}"
     } for p, user in results]
@@ -98,7 +98,7 @@ async def get_recent_payments(
         "amount": p.amount,
         "payment_date": p.payment_date,
         "payment_method": p.payment_method,
-        "status": p.status.value,
+        "status": p.status,
         "receipt_url": p.receipt_url,
         "tenant_name": f"{user.first_name} {user.last_name}",
         "property_name": tenant.unit.property.name if tenant and tenant.unit else "N/A"

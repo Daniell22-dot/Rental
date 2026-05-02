@@ -99,7 +99,7 @@ async def _get_system_stats_internal(db: AsyncSession) -> SystemStatsResponse:
     result = await db.execute(
         select(func.sum(Payment.amount)).where(
             and_(
-                Payment.status == PaymentStatus.COMPLETED,
+                Payment.status == 'completed',
                 func.extract('year', Payment.payment_date) == current_year
             )
         )
@@ -164,7 +164,7 @@ async def get_dashboard_metrics(
     result = await db.execute(
         select(func.sum(Payment.amount)).where(
             and_(
-                Payment.status == PaymentStatus.COMPLETED,
+                Payment.status == 'completed',
                 Payment.payment_date >= current_month
             )
         )
@@ -233,7 +233,7 @@ async def get_revenue_chart(
         result = await db.execute(
             select(func.sum(Payment.amount)).where(
                 and_(
-                    Payment.status == PaymentStatus.COMPLETED,
+                    Payment.status == 'completed',
                     Payment.payment_date >= month_start,
                     Payment.payment_date < next_month
                 )
@@ -317,14 +317,14 @@ async def get_all_tenants_summary(
         User.phone,
         Property.name.label("property_name"),
         Unit.unit_number,
-        Tenant.monthly_rent,
+        Unit.monthly_rent,
         Tenant.status,
         func.max(Payment.payment_date).label("last_payment_date")
     ).join(User, Tenant.user_id == User.id)\
      .outerjoin(Unit, Tenant.unit_id == Unit.id)\
      .outerjoin(Property, Unit.property_id == Property.id)\
      .outerjoin(Payment, Tenant.id == Payment.tenant_id)\
-     .group_by(Tenant.id, User.id, Property.name, Unit.unit_number)
+     .group_by(Tenant.id, User.id, Property.name, Unit.unit_number, Unit.monthly_rent)
     
     if status:
         query = query.where(Tenant.status == status)
@@ -340,7 +340,7 @@ async def get_all_tenants_summary(
             select(func.sum(Payment.amount)).where(
                 and_(
                     Payment.tenant_id == tenant.id,
-                    Payment.status == PaymentStatus.COMPLETED
+                    Payment.status == 'completed'
                 )
             )
         )

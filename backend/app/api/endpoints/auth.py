@@ -14,6 +14,7 @@ from app.core.security import (
     verify_password
 )
 from app.models.users import User, UserRole
+from app.models.tenant import Tenant
 from pydantic import BaseModel, EmailStr
 import logging
 
@@ -160,10 +161,25 @@ async def register(response: Response, user_in: UserCreate, db: AsyncSession = D
             role=user_in.role
         )
         db.add(new_user)
-        print("[RMS AUTH] Committing to DB...")
+        print("[RMS AUTH] Committing user to DB...")
         await db.commit()
         print("[RMS AUTH] Refreshing user...")
         await db.refresh(new_user)
+        
+        # Create corresponding Tenant record so admin/landlord dashboards can see this tenant
+        if new_user.role == UserRole.TENANT:
+            print(f"[RMS AUTH] Creating tenant record for user {new_user.id}...")
+            new_tenant = Tenant(
+                user_id=new_user.id,
+                first_name=new_user.first_name,
+                last_name=new_user.last_name,
+                email=new_user.email,
+                phone=new_user.phone,
+                status='active'
+            )
+            db.add(new_tenant)
+            await db.commit()
+            print(f"[RMS AUTH] Tenant record created successfully.")
         
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
@@ -242,6 +258,7 @@ async def setup_db(db: AsyncSession = Depends(get_db)):
         from app.models.document import Document
         from app.models.monitoring import SystemMetric, LogEntry
         from app.models.cache import CacheItem
+        from app.models.utility import UtilityCharge
         
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
