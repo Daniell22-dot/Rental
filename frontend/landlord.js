@@ -11,7 +11,6 @@ async function initLandlordApp() {
     }
 
     await loadDashboardData();
-    await loadProperties();
     await loadTenants();
     await loadPayments();
     await loadMaintenanceRequests();
@@ -88,43 +87,14 @@ function initRevenueChart() {
     });
 }
 
-async function loadProperties() {
-    const token = localStorage.getItem('rms-landlord-token');
-    const container = document.getElementById('properties-list');
-    
-    try {
-        const res = await fetch('/api/v1/properties/', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const properties = await res.json();
-        
-        if (!properties || properties.length === 0) {
-            container.innerHTML = '<div class="card">No properties found.</div>';
-            return;
-        }
-        
-        container.innerHTML = properties.map(prop => `
-            <div class="card property-card">
-                <h4>${escapeHtml(prop.name)}</h4>
-                <p>${escapeHtml(prop.address)}</p>
-                <p>Units: ${prop.units || 0}</p>
-                <p>Occupancy: ${prop.occupancy_rate || 0}%</p>
-                <button onclick="editProperty(${prop.id})" class="btn-secondary">Edit</button>
-                <button onclick="viewPropertyDetails(${prop.id})" class="btn-primary">View Details</button>
-            </div>
-        `).join('');
-    } catch (err) {
-        console.error('Error loading properties:', err);
-        container.innerHTML = '<div class="card">Error loading properties.</div>';
-    }
-}
+
 
 async function loadTenants() {
     const token = localStorage.getItem('rms-landlord-token');
     const tbody = document.getElementById('tenants-table-body');
     
     try {
-        const res = await fetch('/api/v1/tenants/', {
+        const res = await fetch('/api/v1/admin/tenants', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const tenants = await res.json();
@@ -136,7 +106,7 @@ async function loadTenants() {
         
         tbody.innerHTML = tenants.map(tenant => `
             <tr>
-                <td>${escapeHtml(tenant.first_name)} ${escapeHtml(tenant.last_name)}</td>
+                <td>${escapeHtml(tenant.name)}</td>
                 <td>${escapeHtml(tenant.property_name || 'N/A')}</td>
                 <td>${tenant.phone || 'N/A'}</td>
                 <td>Ksh ${(tenant.monthly_rent || 0).toLocaleString()}</td>
@@ -240,17 +210,14 @@ function showLandlordView(viewId) {
     
     // Refresh data
     if (viewId === 'dashboard') loadDashboardData();
-    if (viewId === 'properties') loadProperties();
     if (viewId === 'tenants') loadTenants();
     if (viewId === 'payments') loadPayments();
     if (viewId === 'maintenance') loadMaintenanceRequests();
-    if (viewId === 'utilities') { loadUtilityCharges(); loadUtilityProfitSummary(); loadUnitsForUtilityForms(); }
+    if (viewId === 'utilities') { loadUtilityCharges(); loadUtilityProfitSummary(); }
     if (viewId === 'messages') loadFeedback();
 }
 
-function addProperty() {
-    alert('Add property form - Coming soon!');
-}
+
 
 function editProperty(id) {
     alert(`Edit property ${id} - Coming soon!`);
@@ -316,56 +283,6 @@ function escapeHtml(text) {
 // UTILITIES MANAGEMENT
 // ═══════════════════════════════════════════════════════════
 
-// Load available units into select dropdowns
-async function loadUnitsForUtilityForms() {
-    const token = localStorage.getItem('rms-landlord-token');
-    try {
-        // Try to get units from the properties endpoint — fetch all properties and extract units
-        const res = await fetch('/api/v1/admin/metrics', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        // Also fetch properties to get unit details
-        const propsRes = await fetch('/api/v1/properties/', {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        let units = [];
-        if (propsRes.ok) {
-            const properties = await propsRes.json();
-            // If properties come with units embedded, use them
-            if (Array.isArray(properties)) {
-                properties.forEach(prop => {
-                    if (prop.units_list && Array.isArray(prop.units_list)) {
-                        prop.units_list.forEach(u => {
-                            units.push({ id: u.id, label: `${prop.name} - Unit ${u.unit_number}` });
-                        });
-                    } else if (prop.id) {
-                        // Fallback: create synthetic unit entries from property
-                        for (let i = 1; i <= (prop.total_units || prop.units || 1); i++) {
-                            units.push({ id: prop.id * 100 + i, label: `${prop.name || 'Property ' + prop.id} - Unit ${i}`, property_id: prop.id });
-                        }
-                    }
-                });
-            }
-        }
-
-        // If no units found, add a placeholder
-        if (units.length === 0) {
-            units.push({ id: 1, label: 'Unit 1 (Default)' });
-        }
-
-        const waterSelect = document.getElementById('water-unit-id');
-        const wifiSelect = document.getElementById('wifi-unit-id');
-        
-        const optionsHtml = '<option value="">Select Unit...</option>' + 
-            units.map(u => `<option value="${u.id}">${escapeHtml(u.label)}</option>`).join('');
-        
-        if (waterSelect) waterSelect.innerHTML = optionsHtml;
-        if (wifiSelect) wifiSelect.innerHTML = optionsHtml;
-    } catch (err) {
-        console.error('Error loading units for utility forms:', err);
-    }
-}
 
 // Set default billing month to current month
 function setDefaultBillingMonth() {
@@ -382,7 +299,10 @@ function setDefaultBillingMonth() {
 async function submitUtilityCharge(event, utilityType) {
     event.preventDefault();
     const token = localStorage.getItem('rms-landlord-token');
-    
+    const amount = parseFloat(document.getElementById(`${utilityType}-amount`).value);
+    const billingMonth = document.getElementById(`${utilityType}-month`).value;
+    const notes = document.getElementById(`${utilityType}-notes`).value;
+
     const payload = {
         utility_type: utilityType,
         amount: amount,
@@ -391,7 +311,10 @@ async function submitUtilityCharge(event, utilityType) {
     };
 
     if (utilityType === 'water') {
-        payload.units_consumed = parseFloat(document.getElementById('water-units').value);
+        const unitsEl = document.getElementById('water-units');
+        if (unitsEl) {
+            payload.units_consumed = parseFloat(unitsEl.value);
+        }
     }
 
     try {
