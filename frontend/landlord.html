@@ -41,6 +41,9 @@
                     <a href="#" onclick="showLandlordView('reports')">
                         <i class="fas fa-file-alt"></i> Reports
                     </a>
+                    <a href="#" onclick="showLandlordView('messages')">
+                        <i class="fas fa-envelope"></i> Messages
+                    </a>
                 </nav>
                 <div class="logout-btn">
                     <button onclick="logout()" class="btn-text">
@@ -289,6 +292,38 @@
                             <button onclick="generateReport()" class="btn-primary">Generate</button>
                         </div>
                         <div id="report-output"></div>
+                    </div>
+
+                    <div id="messages" class="content-view">
+                        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:1.5rem;">
+                            <!-- Broadcast Messages -->
+                            <div class="card">
+                                <h3><i class="fas fa-bullhorn" style="color:var(--accent);"></i> Broadcast Message</h3>
+                                <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:1rem;">Send a notification to all tenants.</p>
+                                <form id="broadcast-form" onsubmit="submitBroadcast(event)">
+                                    <div class="form-group">
+                                        <label>Title</label>
+                                        <input type="text" id="broadcast-title" required placeholder="E.g. Water Interruption">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Message</label>
+                                        <textarea id="broadcast-message" required rows="4" placeholder="Type your message here..."></textarea>
+                                    </div>
+                                    <button type="submit" class="btn-primary" style="width:100%;"><i class="fas fa-paper-plane"></i> Send Broadcast</button>
+                                </form>
+                            </div>
+                            
+                            <!-- Tenant Feedback -->
+                            <div class="card">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                                    <h3 style="margin:0;"><i class="fas fa-comments" style="color:var(--success);"></i> Tenant Feedback</h3>
+                                    <button onclick="loadFeedback()" class="icon-btn"><i class="fas fa-sync-alt"></i></button>
+                                </div>
+                                <div id="feedback-list" style="max-height: 400px; overflow-y: auto; display:flex; flex-direction:column; gap:0.75rem;">
+                                    <div style="text-align:center; padding:2rem; color:var(--text-muted);">Loading feedback...</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </main>

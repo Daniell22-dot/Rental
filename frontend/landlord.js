@@ -679,6 +679,77 @@ function showToast(message, type = 'info') {
     }, 3000);
 }
 
+// Broadcast and Messages
+async function submitBroadcast(event) {
+    event.preventDefault();
+    const token = localStorage.getItem('rms-landlord-token');
+    if (!token) return;
+
+    const title = document.getElementById('broadcast-title').value;
+    const message = document.getElementById('broadcast-message').value;
+
+    try {
+        const res = await fetch('/api/v1/notifications/', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                title: title,
+                message: message,
+                notification_type: 'general',
+                broadcast: true
+            })
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+            showToast('Broadcast sent successfully!', 'success');
+            document.getElementById('broadcast-form').reset();
+        } else {
+            showToast(data.detail || 'Failed to send broadcast.', 'error');
+        }
+    } catch (err) {
+        console.error('Error sending broadcast:', err);
+        showToast('Network error. Please try again.', 'error');
+    }
+}
+
+async function loadFeedback() {
+    const token = localStorage.getItem('rms-landlord-token');
+    const container = document.getElementById('feedback-list');
+    if (!container) return;
+
+    try {
+        const res = await fetch('/api/v1/interaction/feedback', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!res.ok) throw new Error('Failed to fetch feedback');
+        const feedbacks = await res.json();
+
+        if (!feedbacks || feedbacks.length === 0) {
+            container.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--text-muted);">No feedback received yet.</div>';
+            return;
+        }
+
+        container.innerHTML = feedbacks.map(f => `
+            <div style="border-bottom: 1px solid var(--border); padding-bottom: 0.75rem;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">
+                    <strong>${escapeHtml(f.subject)}</strong>
+                    <small style="color:var(--text-muted);">${new Date(f.created_at).toLocaleDateString()}</small>
+                </div>
+                <p style="font-size:0.9rem; margin:0 0 0.5rem 0;">${escapeHtml(f.message)}</p>
+                <div style="font-size:0.8rem; color:var(--accent);">From: ${escapeHtml(f.tenant_name)}</div>
+            </div>
+        `).join('');
+    } catch (err) {
+        console.error('Error loading feedback:', err);
+        container.innerHTML = '<div style="text-align:center; padding:2rem; color:var(--danger);">Error loading feedback.</div>';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const savedTheme = localStorage.getItem('rms-theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
