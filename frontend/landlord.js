@@ -220,7 +220,7 @@ async function loadMaintenanceRequests() {
 }
 
 function showLandlordView(viewId) {
-    const views = ['dashboard', 'properties', 'tenants', 'payments', 'maintenance', 'reports'];
+    const views = ['dashboard', 'properties', 'tenants', 'payments', 'maintenance', 'utilities', 'reports'];
     
     views.forEach(id => {
         const view = document.getElementById(id);
@@ -244,6 +244,7 @@ function showLandlordView(viewId) {
     if (viewId === 'tenants') loadTenants();
     if (viewId === 'payments') loadPayments();
     if (viewId === 'maintenance') loadMaintenanceRequests();
+    if (viewId === 'utilities') { loadUtilityCharges(); loadUtilityProfitSummary(); loadUnitsForUtilityForms(); }
 }
 
 function addProperty() {
@@ -308,6 +309,392 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// ═══════════════════════════════════════════════════════════
+// UTILITIES MANAGEMENT
+// ═══════════════════════════════════════════════════════════
+
+// Load available units into select dropdowns
+async function loadUnitsForUtilityForms() {
+    const token = localStorage.getItem('rms-landlord-token');
+    try {
+        // Try to get units from the properties endpoint — fetch all properties and extract units
+        const res = await fetch('/api/v1/admin/metrics', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        // Also fetch properties to get unit details
+        const propsRes = await fetch('/api/v1/properties/', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        let units = [];
+        if (propsRes.ok) {
+            const properties = await propsRes.json();
+            // If properties come with units embedded, use them
+            if (Array.isArray(properties)) {
+                properties.forEach(prop => {
+                    if (prop.units_list && Array.isArray(prop.units_list)) {
+                        prop.units_list.forEach(u => {
+                            units.push({ id: u.id, label: `${prop.name} - Unit ${u.unit_number}` });
+                        });
+                    } else if (prop.id) {
+                        // Fallback: create synthetic unit entries from property
+                        for (let i = 1; i <= (prop.total_units || prop.units || 1); i++) {
+                            units.push({ id: prop.id * 100 + i, label: `${prop.name || 'Property ' + prop.id} - Unit ${i}`, property_id: prop.id });
+                        }
+                    }
+                });
+            }
+        }
+
+        // If no units found, add a placeholder
+        if (units.length === 0) {
+            units.push({ id: 1, label: 'Unit 1 (Default)' });
+        }
+
+        const waterSelect = document.getElementById('water-unit-id');
+        const wifiSelect = document.getElementById('wifi-unit-id');
+        
+        const optionsHtml = '<option value="">Select Unit...</option>' + 
+            units.map(u => `<option value="${u.id}">${escapeHtml(u.label)}</option>`).join('');
+        
+        if (waterSelect) waterSelect.innerHTML = optionsHtml;
+        if (wifiSelect) wifiSelect.innerHTML = optionsHtml;
+    } catch (err) {
+        console.error('Error loading units for utility forms:', err);
+    }
+}
+
+// Set default billing month to current month
+function setDefaultBillingMonth() {
+    const now = new Date();
+    const monthStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    const fields = ['water-month', 'wifi-month'];
+    fields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && !el.value) el.value = monthStr;
+    });
+}
+
+// Submit a utility charge (water or wifi)
+async function submitUtilityCharge(event, utilityType) {
+    event.preventDefault();
+    const token = localStorage.getItem('rms-landlord-token');
+    
+    const unitId = parseInt(document.getElementById(`${utilityType}-unit-id`).value);
+    const amount = parseFloat(document.getElementById(`${utilityType}-amount`).value);
+    const billingMonth = document.getElementById(`${utilityType}-month`).value;
+    const notes = document.getElementById(`${utilityType}-notes`).value;
+    
+    const payload = {
+        unit_id: unitId,
+        utility_type: utilityType,
+        amount: amount,
+        billing_month: billingMonth,
+        notes: notes || null
+    };
+
+    if (utilityType === 'water') {
+        payload.units_consumed = parseFloat(document.getElementById('water-units').value);
+    }
+
+    try {
+        const res = await fetch('/api/v1/utilities/', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        
+        const data = await res.json();
+        if (res.ok) {
+            showToast(data.message || `${utilityType} charge added!`, 'success');
+            document.getElementById(`${utilityType}-charge-form`).reset();
+            setDefaultBillingMonth();
+            loadUtilityCharges();
+            loadUtilityProfitSummary();
+        } else {
+            showToast(data.detail || 'Failed to add charge', 'error');
+        }
+    } catch (err) {
+        console.error('Error adding utility charge:', err);
+        showToast('Network error. Please try again.', 'error');
+    }
+}
+
+// Load utility charges list
+async function loadUtilityCharges() {
+    const token = localStorage.getItem('rms-landlord-token');
+    const tbody = document.getElementById('utility-charges-table');
+    if (!tbody) return;
+
+    const typeFilter = document.getElementById('filter-utility-type')?.value || '';
+    const monthFilter = document.getElementById('filter-utility-month')?.value || '';
+    
+    let url = '/api/v1/utilities/?';
+    if (typeFilter) url += `utility_type=${typeFilter}&`;
+    if (monthFilter) url += `billing_month=${monthFilter}&`;
+    
+    try {
+        const res = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const charges = await res.json();
+        
+        if (!charges || !Array.isArray(charges) || charges.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:2rem; color:var(--text-muted);">No utility charges found. Add your first charge above.</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = charges.map(c => {
+            const typeIcon = c.utility_type === 'water' 
+                ? '<i class="fas fa-tint" style="color:#0284c7;"></i>' 
+                : '<i class="fas fa-wifi" style="color:#16a34a;"></i>';
+            const typeBadge = c.utility_type === 'water'
+                ? '<span class="utility-type-badge water">Water</span>'
+                : '<span class="utility-type-badge wifi">Wifi</span>';
+            const statusClass = c.status === 'paid' ? 'status-paid' : 'status-pending';
+            
+            return `
+                <tr>
+                    <td>${escapeHtml(c.unit_number) || c.unit_id}</td>
+                    <td>${escapeHtml(c.property_name) || 'N/A'}</td>
+                    <td>${escapeHtml(c.tenant_name) || 'N/A'}</td>
+                    <td>${typeBadge}</td>
+                    <td>${c.units_consumed != null ? c.units_consumed : '—'}</td>
+                    <td><strong>Ksh ${c.amount.toLocaleString()}</strong></td>
+                    <td>${c.billing_month}</td>
+                    <td><span class="status-badge ${statusClass}">${c.status}</span></td>
+                    <td>
+                        <div style="display:flex; gap:0.25rem;">
+                            <button onclick="toggleUtilityStatus(${c.id}, '${c.status}')" class="icon-btn" title="${c.status === 'pending' ? 'Mark as Paid' : 'Mark as Pending'}">
+                                <i class="fas ${c.status === 'pending' ? 'fa-check-circle' : 'fa-undo'}" style="color:${c.status === 'pending' ? 'var(--success)' : 'var(--warning)'}"></i>
+                            </button>
+                            <button onclick="viewUtilityInvoice(${c.unit_id}, '${c.billing_month}')" class="icon-btn" title="View Invoice">
+                                <i class="fas fa-file-invoice" style="color:var(--accent)"></i>
+                            </button>
+                            <button onclick="deleteUtilityCharge(${c.id})" class="icon-btn" title="Delete">
+                                <i class="fas fa-trash" style="color:var(--danger)"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    } catch (err) {
+        console.error('Error loading utility charges:', err);
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:2rem;">Error loading charges.</td></tr>';
+    }
+}
+
+// Toggle utility charge status between paid/pending
+async function toggleUtilityStatus(chargeId, currentStatus) {
+    const token = localStorage.getItem('rms-landlord-token');
+    const newStatus = currentStatus === 'pending' ? 'paid' : 'pending';
+    
+    try {
+        const res = await fetch(`/api/v1/utilities/${chargeId}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
+        
+        if (res.ok) {
+            showToast(`Charge marked as ${newStatus}`, 'success');
+            loadUtilityCharges();
+            loadUtilityProfitSummary();
+        } else {
+            showToast('Failed to update status', 'error');
+        }
+    } catch (err) {
+        showToast('Network error', 'error');
+    }
+}
+
+// Delete a utility charge
+async function deleteUtilityCharge(chargeId) {
+    if (!confirm('Are you sure you want to delete this charge?')) return;
+    const token = localStorage.getItem('rms-landlord-token');
+    
+    try {
+        const res = await fetch(`/api/v1/utilities/${chargeId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (res.ok) {
+            showToast('Charge deleted', 'success');
+            loadUtilityCharges();
+            loadUtilityProfitSummary();
+        } else {
+            showToast('Failed to delete charge', 'error');
+        }
+    } catch (err) {
+        showToast('Network error', 'error');
+    }
+}
+
+// Load profit summary stats
+async function loadUtilityProfitSummary() {
+    const token = localStorage.getItem('rms-landlord-token');
+    
+    try {
+        const res = await fetch('/api/v1/utilities/profit-summary', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        
+        document.getElementById('water-income').textContent = `Ksh ${(data.total_water_income || 0).toLocaleString()}`;
+        document.getElementById('wifi-income').textContent = `Ksh ${(data.total_wifi_income || 0).toLocaleString()}`;
+        document.getElementById('total-utility-income').textContent = `Ksh ${(data.total_utility_income || 0).toLocaleString()}`;
+        document.getElementById('pending-utility-count').textContent = data.pending_count || 0;
+    } catch (err) {
+        console.error('Error loading utility profit summary:', err);
+    }
+}
+
+// View invoice/statement for a unit and billing month
+async function viewUtilityInvoice(unitId, billingMonth) {
+    const token = localStorage.getItem('rms-landlord-token');
+    
+    try {
+        const res = await fetch(`/api/v1/utilities/statement/${unitId}?billing_month=${billingMonth}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const statement = await res.json();
+        
+        const invoiceHtml = `
+            <div class="invoice-document" id="printable-invoice">
+                <div class="invoice-header">
+                    <div>
+                        <h2 style="margin:0; font-size:1.3rem; color:var(--text-main);">UTILITY INVOICE</h2>
+                        <p style="color:var(--text-muted); font-size:0.78rem; margin-top:0.25rem;">Rental Management System</p>
+                    </div>
+                    <div style="text-align:right;">
+                        <p style="font-size:0.82rem;"><strong>Billing Period:</strong> ${statement.billing_month}</p>
+                        <p style="font-size:0.78rem; color:var(--text-muted);">Generated: ${new Date(statement.generated_at).toLocaleDateString()}</p>
+                    </div>
+                </div>
+                
+                <div class="invoice-tenant-info">
+                    <div>
+                        <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:0.2rem;">BILLED TO</p>
+                        <p style="font-weight:600; font-size:0.92rem;">${escapeHtml(statement.tenant_name)}</p>
+                        ${statement.tenant_email ? `<p style="font-size:0.8rem; color:var(--text-muted);">${statement.tenant_email}</p>` : ''}
+                        ${statement.tenant_phone ? `<p style="font-size:0.8rem; color:var(--text-muted);">${statement.tenant_phone}</p>` : ''}
+                    </div>
+                    <div style="text-align:right;">
+                        <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:0.2rem;">PROPERTY</p>
+                        <p style="font-weight:600; font-size:0.92rem;">${escapeHtml(statement.property_name)}</p>
+                        <p style="font-size:0.8rem; color:var(--text-muted);">Unit ${escapeHtml(statement.unit_number)}</p>
+                    </div>
+                </div>
+
+                <table class="invoice-table">
+                    <thead>
+                        <tr>
+                            <th>Service</th>
+                            <th>Units</th>
+                            <th>Amount (Ksh)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${statement.charges.map(c => `
+                            <tr>
+                                <td>
+                                    ${c.type === 'water' ? '<i class="fas fa-tint" style="color:#0284c7;"></i>' : '<i class="fas fa-wifi" style="color:#16a34a;"></i>'}
+                                    ${c.type.charAt(0).toUpperCase() + c.type.slice(1)}
+                                    ${c.notes ? `<br><small style="color:var(--text-muted);">${escapeHtml(c.notes)}</small>` : ''}
+                                </td>
+                                <td>${c.units_consumed != null ? c.units_consumed : '—'}</td>
+                                <td style="text-align:right;">${c.amount.toLocaleString()}</td>
+                                <td><span class="status-badge status-${c.status}">${c.status}</span></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                    <tfoot>
+                        <tr class="invoice-total-row">
+                            <td colspan="2" style="text-align:right; font-weight:700;">TOTAL</td>
+                            <td style="text-align:right; font-weight:700; font-size:1.05rem;">Ksh ${statement.total_amount.toLocaleString()}</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        `;
+        
+        document.getElementById('invoice-content').innerHTML = invoiceHtml;
+        document.getElementById('invoice-modal').style.display = 'flex';
+    } catch (err) {
+        console.error('Error loading invoice:', err);
+        showToast('Failed to load invoice', 'error');
+    }
+}
+
+function closeInvoiceModal() {
+    document.getElementById('invoice-modal').style.display = 'none';
+}
+
+function printInvoice() {
+    const content = document.getElementById('printable-invoice');
+    if (!content) return;
+    
+    const printWindow = window.open('', '_blank', 'width=800,height=600');
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>Utility Invoice</title>
+            <style>
+                body { font-family: 'Inter', system-ui, sans-serif; padding: 2rem; color: #1a1a1a; }
+                .invoice-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #e2e8f0; padding-bottom: 1rem; margin-bottom: 1.5rem; }
+                .invoice-tenant-info { display: flex; justify-content: space-between; background: #f8fafc; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; }
+                .invoice-table { width: 100%; border-collapse: collapse; }
+                .invoice-table th, .invoice-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 0.85rem; }
+                .invoice-table th { background: #f1f5f9; font-weight: 600; text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.04em; }
+                .invoice-total-row td { border-top: 2px solid #1a1a1a; padding-top: 0.85rem; }
+                .status-badge { padding: 0.15rem 0.5rem; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+                .status-paid { background: #dcfce7; color: #16a34a; }
+                .status-pending { background: #fef3c7; color: #d97706; }
+                h2 { margin: 0; }
+                p { margin: 0.2rem 0; }
+                @media print { body { padding: 0; } }
+            </style>
+        </head>
+        <body>${content.innerHTML}</body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => { printWindow.print(); }, 300);
+}
+
+// Simple toast notification
+function showToast(message, type = 'info') {
+    // Remove existing toasts
+    document.querySelectorAll('.rms-toast').forEach(t => t.remove());
+    
+    const toast = document.createElement('div');
+    toast.className = `rms-toast rms-toast-${type}`;
+    toast.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+        <span>${message}</span>
+    `;
+    document.body.appendChild(toast);
+    
+    // Trigger animation
+    requestAnimationFrame(() => toast.classList.add('show'));
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
