@@ -89,7 +89,7 @@ async def _get_system_stats_internal(db: AsyncSession) -> SystemStatsResponse:
     # Calculate total revenue from completed payments
     result = await db.execute(
         select(func.sum(Payment.amount)).where(
-            Payment.status == PaymentStatus.COMPLETED
+            Payment.status == 'paid'
         )
     )
     total_revenue = result.scalar() or 0.0
@@ -154,7 +154,7 @@ async def get_dashboard_metrics(
     # Calculate total revenue (all time)
     result = await db.execute(
         select(func.sum(Payment.amount)).where(
-            Payment.status == PaymentStatus.COMPLETED
+            Payment.status == 'paid'
         )
     )
     total_revenue = result.scalar() or 0.0
@@ -273,19 +273,19 @@ async def get_payment_summary(
     
     # Completed payments
     result = await db.execute(
-        select(func.sum(Payment.amount)).where(Payment.status == PaymentStatus.COMPLETED)
+        select(func.sum(Payment.amount)).where(Payment.status == 'paid')
     )
     completed_amount = result.scalar() or 0.0
     
     # Pending payments
     result = await db.execute(
-        select(func.sum(Payment.amount)).where(Payment.status == PaymentStatus.PENDING)
+        select(func.sum(Payment.amount)).where(Payment.status == 'pending')
     )
     pending_amount = result.scalar() or 0.0
     
     # Overdue payments
     result = await db.execute(
-        select(func.sum(Payment.amount)).where(Payment.status == PaymentStatus.OVERDUE)
+        select(func.sum(Payment.amount)).where(Payment.status == 'overdue')
     )
     overdue_amount = result.scalar() or 0.0
     
