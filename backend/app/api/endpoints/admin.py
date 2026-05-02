@@ -324,7 +324,7 @@ async def get_all_tenants_summary(
      .outerjoin(Unit, Tenant.unit_id == Unit.id)\
      .outerjoin(Property, Unit.property_id == Property.id)\
      .outerjoin(Payment, Tenant.id == Payment.tenant_id)\
-     .group_by(Tenant.id, User.id, Property.name, Unit.unit_number, Unit.monthly_rent)
+     .group_by(Tenant.id, User.id, User.first_name, User.last_name, User.email, User.phone, Property.name, Unit.unit_number, Unit.monthly_rent, Tenant.status)
     
     if status:
         query = query.where(Tenant.status == status)
