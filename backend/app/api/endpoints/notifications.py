@@ -24,6 +24,8 @@ class NotificationCreate(BaseModel):
     title: str
     message: str
     notification_type: str = "general"
+    target_user_id: int = None
+    broadcast: bool = False
 
 @router.get("/", response_model=List[NotificationResponse])
 async def get_notifications(
@@ -50,12 +52,29 @@ async def create_notification(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Create a notification (admin/landlord only)"""
+    """Create a notification (admin/landlord can broadcast)"""
+    # If broadcast, create for all users (or tenants)
+    if notification_in.broadcast:
+        result = await db.execute(select(User).where(User.role == 'tenant'))
+        tenants = result.scalars().all()
+        for t in tenants:
+            notif = Notification(
+                user_id=t.id,
+                title=notification_in.title,
+                message=notification_in.message,
+                type=notification_in.notification_type
+            )
+            db.add(notif)
+        await db.commit()
+        return {"message": f"Broadcasted to {len(tenants)} tenants."}
+    
+    # Specific user
+    target_id = notification_in.target_user_id or current_user.id
     notification = Notification(
-        user_id=current_user.id,
+        user_id=target_id,
         title=notification_in.title,
         message=notification_in.message,
-        notification_type=notification_in.notification_type
+        type=notification_in.notification_type
     )
     db.add(notification)
     await db.commit()
