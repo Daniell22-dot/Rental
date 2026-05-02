@@ -220,7 +220,7 @@ async function loadMaintenanceRequests() {
 }
 
 function showLandlordView(viewId) {
-    const views = ['dashboard', 'properties', 'tenants', 'payments', 'maintenance', 'utilities', 'reports'];
+    const views = ['dashboard', 'properties', 'tenants', 'payments', 'maintenance', 'utilities', 'reports', 'messages'];
     
     views.forEach(id => {
         const view = document.getElementById(id);
@@ -245,6 +245,7 @@ function showLandlordView(viewId) {
     if (viewId === 'payments') loadPayments();
     if (viewId === 'maintenance') loadMaintenanceRequests();
     if (viewId === 'utilities') { loadUtilityCharges(); loadUtilityProfitSummary(); loadUnitsForUtilityForms(); }
+    if (viewId === 'messages') loadFeedback();
 }
 
 function addProperty() {
