@@ -141,7 +141,7 @@ async def verify_mpesa_payment(
         payment_date=datetime.utcnow(),
         payment_method="M-Pesa",
         transaction_id=verification.transaction_code,
-        status=PaymentStatus.PENDING
+        status='pending'
     )
     
     db.add(payment)
