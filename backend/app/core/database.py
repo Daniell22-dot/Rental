@@ -14,16 +14,12 @@ if not settings.ASYNC_DATABASE_URL:
     raise ValueError("DATABASE_URL must be set in Environment Variables")
 
 # On Vercel (Serverless), we should use NullPool to prevent connection leaks/errors
-# and ensure each request gets a fresh connection that is closed immediately.
 import os
-pool_class = NullPool if os.getenv("VERCEL") else QueuePool
+pool_class = NullPool if os.getenv("VERCEL") else None
 
 # Configure engine arguments dynamically based on pool class
-# NOTE: connect_args are asyncpg-specific. 'prepare_threshold' is psycopg3-only
-# and must NOT be used here. Use 'statement_cache_size=0' for asyncpg.
 engine_kwargs = {
     "echo": settings.DB_ECHO,
-    "poolclass": pool_class,
     "connect_args": {
         "command_timeout": 30,
         "statement_cache_size": 0,  # Disables prepared statements - required for PgBouncer
@@ -33,20 +29,17 @@ engine_kwargs = {
     }
 }
 
-# Only add pool sizing if using a pooling class that supports it (QueuePool)
-if pool_class == QueuePool:
+if pool_class:
+    engine_kwargs["poolclass"] = pool_class
+else:
+    # Use default async-compatible pooling
     engine_kwargs.update({
         "pool_size": settings.DB_POOL_SIZE,
         "max_overflow": settings.DB_MAX_OVERFLOW,
         "pool_recycle": 3600,
     })
-else:
-    # Explicitly ensure pool_size/max_overflow are NOT in kwargs for NullPool
-    engine_kwargs.pop("pool_size", None)
-    engine_kwargs.pop("max_overflow", None)
-    print(f"[RMS DEBUG] Using NullPool. Arguments filtered: {list(engine_kwargs.keys())}")
 
-print(f"[RMS DEBUG] Creating engine with class: {pool_class.__name__}")
+print(f"[RMS DEBUG] Creating engine with pool_class: {pool_class.__name__ if pool_class else 'Default'}")
 
 engine = create_async_engine(
     settings.ASYNC_DATABASE_URL,
