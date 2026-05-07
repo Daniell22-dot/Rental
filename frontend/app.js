@@ -173,6 +173,32 @@ async function handleLogin(event) {
 }
 
 
+// Premium Particles for Auth Pages
+function initAuthParticles() {
+    const containers = document.querySelectorAll('.auth-particles');
+    containers.forEach(container => {
+        container.innerHTML = '';
+        for (let i = 0; i < 20; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            const size = Math.random() * 5 + 2;
+            p.style.width = `${size}px`;
+            p.style.height = `${size}px`;
+            p.style.left = `${Math.random() * 100}%`;
+            p.style.animationDuration = `${Math.random() * 10 + 10}s`;
+            p.style.animationDelay = `${Math.random() * 5}s`;
+            container.appendChild(p);
+        }
+    });
+}
+
+// Call particles on load
+document.addEventListener('DOMContentLoaded', () => {
+    initAuthParticles();
+    initTheme();
+    checkAuth();
+});
+
 async function handleRegistration(event) {
     event.preventDefault();
     const firstName = document.getElementById('reg-first').value;
@@ -185,12 +211,6 @@ async function handleRegistration(event) {
     // Validate terms acceptance
     if (!termsAccepted) {
         alert('You must accept the Terms of Service to create an account.');
-        return;
-    }
-
-    // Validate required fields
-    if (!firstName || !lastName || !email || !phone || !password) {
-        alert('Please fill in all required fields.');
         return;
     }
 
@@ -207,9 +227,8 @@ async function handleRegistration(event) {
             first_name: firstName,
             last_name: lastName,
             role: 'tenant', // Default role
-            terms_accepted: termsAccepted,
-            room_number: document.getElementById('reg-room').value,
-            monthly_rent: parseFloat(document.getElementById('reg-rent').value) || 0
+            terms_accepted: termsAccepted
+            // Room and Rent removed - to be assigned by landlord
         };
 
         const controller = new AbortController();

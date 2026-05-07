@@ -22,6 +22,7 @@ engine_kwargs = {
     "connect_args": {
         "command_timeout": 30,
         "statement_cache_size": 0,  # Disables prepared statements - required for PgBouncer
+        "prepared_statement_cache_size": 0, # Extra safety for asyncpg + PgBouncer
         "server_settings": {
             "application_name": "RMS_Vercel"
         },
