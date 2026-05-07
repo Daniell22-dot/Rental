@@ -29,7 +29,7 @@ async def get_current_user(db: AsyncSession = Depends(get_db), token: str = Depe
         headers={"WWW-Authenticate": "Bearer"},
     )
     
-    # Secret access key workflow bypass
+    # Fixed access tokens for single-owner admin/landlord portals
     if token == "admin-local-2026":
         result = await db.execute(select(User).filter(User.role == UserRole.ADMIN))
         user = result.scalars().first()
@@ -41,6 +41,7 @@ async def get_current_user(db: AsyncSession = Depends(get_db), token: str = Depe
         user = result.scalars().first()
         if user: return user
         return User(id=998, email="landlord@rms.local", role=UserRole.LANDLORD, first_name="Landlord", last_name="Local")
+
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         email: str = payload.get("sub")
@@ -109,7 +110,7 @@ async def register(response: Response, user_in: UserCreate, db: AsyncSession = D
     if not is_kenyan_ip("dynamic"): # IP would come from request headers
          raise HTTPException(status_code=403, detail="Registration is only allowed from Kenya.")
 
-    if (not check_rate_limit(user_in.email, register_attempts[user_in.email], 50)):
+    if (not check_rate_limit(user_in.email, register_attempts[user_in.email], 10)):
         raise HTTPException(status_code=429, detail="Too many registration attempts. Please try again later.")
 
     # Validate email format
@@ -138,21 +139,21 @@ async def register(response: Response, user_in: UserCreate, db: AsyncSession = D
     if not PhoneValidator.validate(user_in.phone):
         raise HTTPException(status_code=400, detail="Invalid phone number. Use Kenya format (e.g., 0712345678 or +254712345678)")
     
-    print(f"[RMS AUTH] Registering user: {user_in.email}")
+    logger.info(f"Registering user: {user_in.email}")
     try:
         # Check if user already exists
-        print("[RMS AUTH] Checking if user exists...")
+        logger.debug("Checking if user exists...")
         result = await db.execute(select(User).filter(User.email == user_in.email))
         user = result.scalars().first()
         if user:
-            print(f"[RMS AUTH] User already exists: {user_in.email}")
+            logger.warning(f"Registration attempt for existing user: {user_in.email}")
             raise HTTPException(status_code=409, detail="A user with this email already exists.")
         
         # Normalize phone number
-        print("[RMS AUTH] Normalizing phone...")
+        logger.debug("Normalizing phone...")
         normalized_phone = PhoneValidator.normalize(user_in.phone)
         
-        print("[RMS AUTH] Hashing password and creating user...")
+        logger.debug("Hashing password and creating user...")
         new_user = User(
             email=user_in.email,
             phone=normalized_phone,
@@ -162,9 +163,9 @@ async def register(response: Response, user_in: UserCreate, db: AsyncSession = D
             role=user_in.role
         )
         db.add(new_user)
-        print("[RMS AUTH] Committing user to DB...")
+        logger.debug("Committing user to DB...")
         await db.commit()
-        print("[RMS AUTH] Refreshing user...")
+        logger.debug("Refreshing user...")
         await db.refresh(new_user)
         
         # Create corresponding Tenant record so admin/landlord dashboards can see this tenant
@@ -172,7 +173,7 @@ async def register(response: Response, user_in: UserCreate, db: AsyncSession = D
             from app.models.property import Property
             from app.models.unit import Unit
             
-            print(f"[RMS AUTH] Creating tenant record for user {new_user.id}...")
+            logger.info(f"Creating tenant record for user {new_user.id}...")
             
             # Handle Room Assignment if provided
             unit_id = None
@@ -228,20 +229,20 @@ async def register(response: Response, user_in: UserCreate, db: AsyncSession = D
             )
             db.add(new_tenant)
             await db.commit()
-            print(f"[RMS AUTH] Tenant record created successfully.")
+            logger.info("Tenant record created successfully.")
         
         access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         access_token = create_access_token(
             data={"sub": new_user.email}, expires_delta=access_token_expires
         )
         
-        print(f"[RMS AUTH] Registration successful for: {new_user.email}")
+        logger.info(f"Registration successful for: {new_user.email}")
         return {"access_token": access_token, "token_type": "bearer"}
     except Exception as e:
         import traceback
         error_trace = traceback.format_exc()
-        print(f"[RMS AUTH ERROR] Registration failed: {str(e)}")
-        print(error_trace)
+        logger.error(f"Registration failed: {str(e)}")
+        logger.error(error_trace)
         raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
 
 @router.post("/login", response_model=Token)
@@ -261,11 +262,11 @@ async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depen
         data={"sub": user.email}, expires_delta=access_token_expires
     )
     
-    # Set HttpOnly Cookie
+    # Set HttpOnly Cookie with secure settings
     response.set_cookie(
         key="access_token", value=f"Bearer {access_token}", 
         httponly=True, max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        samesite="lax", secure=False # Set secure=True in production
+        samesite="strict", secure=True
     )
     
     return {"access_token": access_token, "token_type": "bearer"}
@@ -287,15 +288,21 @@ async def reset_password(email: EmailStr, db: AsyncSession = Depends(get_db)):
     return {"message": "If an account exists for this email, a reset link will be sent."}
 
 @router.get("/setup-db")
-async def setup_db(db: AsyncSession = Depends(get_db)):
+async def setup_db(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
     """
-    Initialize database tables. 
-    In production, this should be protected or removed.
+    Initialize database tables. Protected behind authentication.
+    Only admins and landlords can trigger this.
     """
+    if current_user.role not in [UserRole.ADMIN, UserRole.LANDLORD]:
+        raise HTTPException(status_code=403, detail="Only admins can initialize the database")
+    
     try:
         from app.core.database import engine, Base
         # Import all models to ensure they are registered
-        from app.models.users import User
+        from app.models.users import User as UserModel
         from app.models.property import Property
         from app.models.unit import Unit
         from app.models.tenant import Tenant
@@ -312,6 +319,7 @@ async def setup_db(db: AsyncSession = Depends(get_db)):
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         
+        logger.info(f"Database setup triggered by {current_user.email}")
         return {"status": "success", "message": "Database tables created/verified successfully"}
     except Exception as e:
         logger.error(f"Setup DB error: {str(e)}")

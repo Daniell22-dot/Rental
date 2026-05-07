@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     BACKEND_CORS_ORIGINS: List[str] = [
         "https://rental-sigma-five.vercel.app",
+        "https://tuiyabelong.com",
+        "https://www.tuiyabelong.com",
         "http://localhost:3000",
         "http://localhost:8000",
         "http://127.0.0.1:8000"

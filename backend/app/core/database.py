@@ -6,7 +6,6 @@ from app.config import settings
 import logging
 from typing import AsyncGenerator
 
-print("[RMS DEBUG] Loading database.py module...")
 logger = logging.getLogger(__name__)
 
 # Create async engine with optimized connection pooling for serverless
@@ -39,7 +38,7 @@ else:
         "pool_recycle": 3600,
     })
 
-print(f"[RMS DEBUG] Creating engine with pool_class: {pool_class.__name__ if pool_class else 'Default'}")
+logger.info(f"Creating engine with pool_class: {pool_class.__name__ if pool_class else 'Default'}")
 
 engine = create_async_engine(
     settings.ASYNC_DATABASE_URL,

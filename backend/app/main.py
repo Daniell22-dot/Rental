@@ -1,5 +1,5 @@
 # backend/app/main.py
-print("[RMS DEBUG] Loading main.py module...")
+# backend/app/main.py initialization
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -119,7 +119,7 @@ async def trigger_reminders():
 
 @app.on_event("startup")
 async def on_startup():
-    print("[RMS STARTUP] Initializing database tables...")
+    logger.info("Initializing database tables...")
     try:
         from app.core.database import engine, Base
         import app.models.users
@@ -129,9 +129,9 @@ async def on_startup():
         import app.models.utility
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-        print("[RMS STARTUP] Database tables verified/created.")
+        logger.info("Database tables verified/created.")
     except Exception as e:
-        print(f"[RMS STARTUP ERROR] Database initialization failed: {e}")
+        logger.error(f"Database initialization failed: {e}")
 
 @app.get("/health")
 async def health_check():
@@ -143,7 +143,7 @@ async def health_check():
 @app.get("/api/v1/ping")
 async def ping():
     """Simple database-free ping to verify connectivity"""
-    print("[RMS DEBUG] Ping endpoint reached")
+    logger.debug("Ping endpoint reached")
     return {"status": "pong", "timestamp": datetime.utcnow().isoformat()}
 
 # Redirect admin/landlord UI requests on port 8001 to separate ports

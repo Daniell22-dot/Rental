@@ -349,13 +349,23 @@
 
     <!-- Login Screen -->
     <div id="login-screen" class="auth-page">
+        <!-- Floating particles -->
+        <div class="auth-particles" id="login-particles"></div>
+
         <div class="auth-container">
             <div class="auth-brand">
                 <div class="auth-logo">
                     <i class="fas fa-building"></i>
                 </div>
                 <h1>RMS</h1>
-                <p>Rental Management System</p>
+                <p>Your smart space for
+                    <span class="auth-word-rotator">
+                        <span class="word">Rent</span>
+                        <span class="word">Payments</span>
+                        <span class="word">Maintenance</span>
+                        <span class="word">Living</span>
+                    </span>
+                </p>
             </div>
             <form onsubmit="handleLogin(event)" class="auth-form">
                 <div class="auth-field">

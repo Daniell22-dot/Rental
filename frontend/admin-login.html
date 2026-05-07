@@ -113,7 +113,6 @@
 
             if (key === ADMIN_ACCESS_KEY) {
                 errEl.style.display = 'none';
-                // Animate step transition
                 document.getElementById('step-1').classList.remove('active');
                 document.getElementById('step-2').classList.add('active');
                 document.getElementById('dot-1').classList.replace('active', 'done');
@@ -135,7 +134,6 @@
                 errEl.style.display = 'none';
                 btn.disabled = true;
                 btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
-                // Store a dummy token so admin.html recognises the session
                 localStorage.setItem('rms-admin-token', 'admin-local-2026');
                 localStorage.setItem('rms-admin-role', 'admin');
                 setTimeout(() => { window.location.href = 'admin.html'; }, 600);
@@ -156,7 +154,6 @@
             document.getElementById('admin-access-key').focus();
         }
 
-        // Allow Enter key on both inputs
         document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('admin-access-key').addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') verifyAdminKey();

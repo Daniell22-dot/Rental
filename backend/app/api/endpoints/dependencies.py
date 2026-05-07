@@ -14,11 +14,11 @@ from typing import Optional
 async def get_current_owner(
     current_user: User = Depends(get_current_user),
 ) -> User:
-    """Dependency to ensure user is an owner""" 
-    if current_user.role not in [UserRole.OWNER, UserRole.ADMIN]:
+    """Dependency to ensure user is a landlord/owner or admin""" 
+    if current_user.role not in [UserRole.LANDLORD, UserRole.ADMIN]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only owners can access this resource"
+            detail="Only landlords/owners can access this resource"
         )
     return current_user
 
@@ -36,8 +36,8 @@ async def get_current_admin(
 async def get_current_caretaker(
     current_user: User = Depends(get_current_user),
 ) -> User:
-    """Dependency to ensure user is caretaker or owner"""
-    if current_user.role not in [UserRole.CARETAKER, UserRole.OWNER, UserRole.ADMIN]:
+    """Dependency to ensure user is caretaker/property_manager or owner"""
+    if current_user.role not in [UserRole.PROPERTY_MANAGER, UserRole.LANDLORD, UserRole.ADMIN]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Caretaker access required"
