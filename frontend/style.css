@@ -72,12 +72,14 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
-    width: 100%;
+    height: 100vh; /* Force full height */
+    width: 100vw;  /* Force full width */
     position: fixed;
     top: 0;
     left: 0;
-    padding: 1.5rem;
-    z-index: 100;
+    padding: 0;
+    margin: 0;
+    z-index: 9999; /* Ensure it's above everything */
     background: linear-gradient(-45deg, #0f172a, #1e3a5f, #1a1a2e, #16213e);
     background-size: 400% 400%;
     animation: gradientShift 15s ease infinite;
@@ -127,8 +129,9 @@ body {
 
 /* --- Glassmorphic card --- */
 .auth-container {
-    width: 100%;
+    width: 90%;
     max-width: 400px;
+    margin: auto; /* Fallback for flex centering */
     background: rgba(255, 255, 255, 0.07);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
