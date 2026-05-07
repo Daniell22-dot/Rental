@@ -41,9 +41,15 @@ class Settings(BaseSettings):
         url = url.strip()
         
         # Force disable prepared statements for PgBouncer compatibility
-        if "prepared_statement_cache_size" not in url:
-            separator = "&" if "?" in url else "?"
-            url = f"{url}{separator}prepared_statement_cache_size=0"
+        params = [
+            "prepared_statement_cache_size=0",
+            "statement_cache_size=0"
+        ]
+        
+        for param in params:
+            if param.split('=')[0] not in url:
+                separator = "&" if "?" in url else "?"
+                url = f"{url}{separator}{param}"
             
         return url
 

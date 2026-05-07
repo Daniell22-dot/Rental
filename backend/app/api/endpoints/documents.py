@@ -45,7 +45,9 @@ async def get_my_documents(
             "uploaded_at": doc.uploaded_at
         } for doc in documents]
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving documents: {str(e)}")
+        import logging
+        logging.error(f"Document retrieval error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Unable to retrieve documents. Please try again later.")
 
 @router.get("/", response_model=List[DocumentResponse])
 async def list_documents(
@@ -73,4 +75,6 @@ async def list_documents(
             "uploaded_at": doc.uploaded_at
         } for doc in documents]
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving documents: {str(e)}")
+        import logging
+        logging.error(f"Document retrieval error: {str(e)}")
+        raise HTTPException(status_code=500, detail="Unable to retrieve documents. Please try again later.")
