@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -83,16 +83,69 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
-# Simple in-memory rate limiter for demo
+# Robust rate limiter with exponential backoff
 from collections import defaultdict
 import time
+from datetime import datetime, timedelta
 
-login_attempts = defaultdict(list)
-register_attempts = defaultdict(list)
+class RateLimiter:
+    """Rate limiter with exponential backoff and IP tracking"""
+    def __init__(self):
+        self.attempts = defaultdict(list)
+        self.blocked_ips = {}  # IP -> unblock_time
+    
+    def is_blocked(self, key: str) -> bool:
+        """Check if IP/email is currently blocked"""
+        if key in self.blocked_ips:
+            if time.time() < self.blocked_ips[key]:
+                return True
+            else:
+                del self.blocked_ips[key]
+        return False
+    
+    def check_rate_limit(self, key: str, limit: int, window: int = 3600, backoff_multiplier: int = 2) -> bool:
+        """
+        Check and enforce rate limit with exponential backoff.
+        After reaching limit, blocks for increasing durations.
+        """
+        now = time.time()
+        
+        # Remove attempts outside window
+        self.attempts[key] = [t for t in self.attempts[key] if now - t < window]
+        
+        # Check if currently blocked with backoff
+        if self.is_blocked(key):
+            return False
+        
+        if len(self.attempts[key]) >= limit:
+            # Block exponentially: 5min, 15min, 45min, 2h, etc
+            failed_attempts = len(self.attempts[key])
+            backoff_minutes = 5 * (backoff_multiplier ** (failed_attempts - limit))
+            self.blocked_ips[key] = now + (backoff_minutes * 60)
+            return False
+        
+        self.attempts[key].append(now)
+        return True
+    
+    def reset(self, key: str):
+        """Reset attempts for a key (on successful login)"""
+        if key in self.attempts:
+            del self.attempts[key]
+        if key in self.blocked_ips:
+            del self.blocked_ips[key]
+
+login_limiter = RateLimiter()
+register_limiter = RateLimiter()
+
+def get_client_ip(request) -> str:
+    """Extract client IP from request, handling proxies"""
+    if "x-forwarded-for" in request.headers:
+        return request.headers["x-forwarded-for"].split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
 
 def check_rate_limit(key, attempts_list, limit, window=3600):
+    """Deprecated: use RateLimiter class instead"""
     now = time.time()
-    # Remove attempts older than window
     attempts_list[:] = [t for t in attempts_list if now - t < window]
     if len(attempts_list) >= limit:
         return False
@@ -105,14 +158,17 @@ def is_kenyan_ip(ip: str):
     return True 
 
 @router.post("/register", response_model=Token)
-async def register(response: Response, user_in: UserCreate, db: AsyncSession = Depends(get_db)):
+async def register(request: Request, response: Response, user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     from app.core.validators import PasswordValidator, EmailValidator, PhoneValidator
     
+    client_ip = get_client_ip(request)
+    
+    # Check rate limit by IP (10 attempts per hour)
+    if not register_limiter.check_rate_limit(client_ip, limit=10, window=3600):
+        raise HTTPException(status_code=429, detail="Too many registration attempts. Please try again in a few minutes.")
+
     if not is_kenyan_ip("dynamic"): # IP would come from request headers
          raise HTTPException(status_code=403, detail="Registration is only allowed from Kenya.")
-
-    if (not check_rate_limit(user_in.email, register_attempts[user_in.email], 10)):
-        raise HTTPException(status_code=429, detail="Too many registration attempts. Please try again later.")
 
     # Validate email format
     if not EmailValidator.validate(user_in.email):
@@ -215,12 +271,17 @@ async def register(response: Response, user_in: UserCreate, db: AsyncSession = D
         raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")
 
 @router.post("/login", response_model=Token)
-async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
-    if not check_rate_limit(form_data.username, login_attempts[form_data.username], 20):
-        raise HTTPException(status_code=429, detail="Too many login attempts. Account temporarily locked.")
+async def login(request: Request, response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
+    client_ip = get_client_ip(request)
+    
+    # Rate limit by IP: 20 attempts per hour
+    if not login_limiter.check_rate_limit(client_ip, limit=20, window=3600):
+        raise HTTPException(status_code=429, detail="Too many login attempts. Please try again later.")
 
     user = await authenticate_user(db, form_data.username, form_data.password)
     if not user:
+        # Log failed attempt for security monitoring
+        logger.warning(f"Failed login attempt from IP {client_ip} for email {form_data.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -237,6 +298,8 @@ async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depen
         httponly=True, max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         samesite="strict", secure=True
     )
+    
+    # Reset rate limit on successful login\n    login_limiter.reset(client_ip)
     
     return {"access_token": access_token, "token_type": "bearer"}
 

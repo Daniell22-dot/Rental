@@ -90,6 +90,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add middleware to detect portal type based on port or hostname
+@app.middleware("http")
+async def detect_portal_type(request, call_next):
+    """
+    Detect which portal is being accessed based on hostname/port or environment.
+    Tenant: Port 8000 (default)
+    Landlord: Port 8001
+    Admin: Port 8002
+    """
+    host = request.headers.get("host", "localhost")
+    port = host.split(":")[-1] if ":" in host else "80"
+    
+    # Map port to portal type
+    if port == str(settings.LANDLORD_PORT) or settings.DEPLOYMENT_ENV == "landlord":
+        request.state.portal = "landlord"
+    elif port == str(settings.ADMIN_PORT) or settings.DEPLOYMENT_ENV == "admin":
+        request.state.portal = "admin"
+    else:
+        request.state.portal = "tenant"
+    
+    response = await call_next(request)
+    response.headers["X-Portal-Type"] = request.state.portal
+    return response
+
 # Include routers
 app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["Authentication"])
 app.include_router(properties.router, prefix=f"{settings.API_V1_STR}/properties", tags=["Properties"])

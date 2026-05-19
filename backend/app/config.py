@@ -13,13 +13,24 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Rental Management System"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
+    
+    # Server configuration with port-based separation
+    TENANT_PORT: int = int(os.getenv("TENANT_PORT", "8000"))
+    LANDLORD_PORT: int = int(os.getenv("LANDLORD_PORT", "8001"))
+    ADMIN_PORT: int = int(os.getenv("ADMIN_PORT", "8002"))
+    DEPLOYMENT_ENV: str = os.getenv("DEPLOYMENT_ENV", "development")
+    
     BACKEND_CORS_ORIGINS: List[str] = [
         "https://rental-sigma-five.vercel.app",
         "https://tuiyabelong.com",
         "https://www.tuiyabelong.com",
         "http://localhost:3000",
         "http://localhost:8000",
-        "http://127.0.0.1:8000"
+        "http://localhost:8001",
+        "http://localhost:8002",
+        "http://127.0.0.1:8000",
+        "http://127.0.0.1:8001",
+        "http://127.0.0.1:8002"
     ]
     
     # Database
